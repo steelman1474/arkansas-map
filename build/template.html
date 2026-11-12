@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arkansas Counties &amp; Places</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#e8e6df; --frame:#ef9417; --panel:#cfcdc7; --ink:#1b1b1b; --muted:#555;
+    --county:#7fb2e5; --county-hi:#3f86cf; --county-line:#2c4a6b;
+    --city:#d9302b; --town:#22c7c7; --cdp:#d28a12; --sel:#ffd84a; --twp:#86bdf0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--frame);font-family:"Barlow Semi Condensed",system-ui,sans-serif;color:var(--ink)}
+  .wrap{position:absolute;inset:14px;background:var(--bg);display:grid;grid-template-columns:minmax(0,1fr) 320px;overflow:hidden}
+  #map{position:relative;overflow:hidden}
+  svg{width:100%;height:100%;display:block;cursor:grab}
+  svg:active{cursor:grabbing}
+  .county{fill:var(--county);stroke:var(--county-line);stroke-width:.8px;vector-effect:non-scaling-stroke;transition:fill .12s}
+  .county:hover,.county.hi{fill:var(--county-hi)}
+  .county.sel{fill:#5c9ad8;stroke:#0d1f33;stroke-width:2.4px}
+  .county.dim{fill:#aac8e6}
+  .twp{fill:var(--twp);stroke:#4f7fae;stroke-width:.35px;vector-effect:non-scaling-stroke}
+  .twp.dim{fill:#b9d5ee}
+  .twp:hover,.twp.hi{fill:#4d95dd;stroke:#0d1f33;stroke-width:1.4px}
+  .cborder{fill:none;stroke:#1d3550;stroke-width:1.3px;vector-effect:non-scaling-stroke;pointer-events:none}
+  .hl{fill:none;stroke:#0d1f33;stroke-width:3px;vector-effect:non-scaling-stroke;pointer-events:none}
+  .seat{fill:#ffd84a;stroke:#111;stroke-width:1.2px;vector-effect:non-scaling-stroke;cursor:pointer}
+  .seat:hover{fill:#fff}
+  #csvg,#insetwrap,.back,#anim{display:none}
+  #anim{position:absolute;left:0;top:0;pointer-events:none}
+  #map.anim-on #anim{display:block}
+  #map.anim-on #svg, #map.anim-on #csvg{visibility:hidden}
+  #map.anim-on #insetwrap{display:none}
+  .moving .place, .moving .twp{stroke:none}
+  .moving{shape-rendering:optimizeSpeed}
+  #map.cview #svg{display:none}
+  #map.cview #csvg{display:block;animation:cfade .3s ease-out}
+  @keyframes cfade{from{opacity:0}to{opacity:1}}
+  #map.cview #insetwrap{display:block}
+  #map.cview .back{display:block}
+  #map.hide-Twp .twp, #map.hide-Twp text.tl{display:none}
+  #map.hide-City .place.City, #map.hide-City .City{display:none}
+  #map.hide-Town .place.Town, #map.hide-Town .Town{display:none}
+  #map.hide-CDP .place.CDP, #map.hide-CDP .CDP{display:none}
+  #map.hide-County .cborder{display:none}
+  #map.hide-labels .label{display:none}
+  .c-base{fill:var(--county)}
+  #csvg .twp{fill:rgba(255,255,255,.0);stroke:#3c6b98;stroke-width:.8px;stroke-dasharray:4 3}
+  #csvg .twp:hover,#csvg .twp.hi{fill:rgba(77,149,221,.45);stroke-dasharray:none;stroke:#0d1f33;stroke-width:1.6px}
+  #csvg .place.other{opacity:.45}
+  .c-outline{fill:none;stroke:#0d1f33;stroke-width:2.6px;vector-effect:non-scaling-stroke;pointer-events:none}
+  .back{position:absolute;left:14px;top:14px;z-index:4;border:none;border-radius:4px;background:#1d3550;color:#fff;font:inherit;font-size:16px;font-weight:600;padding:7px 14px;cursor:pointer}
+  .back:hover{background:#2f5683}
+  #insetwrap{position:absolute;right:14px;bottom:16px;width:170px;background:rgba(232,230,223,.92);border:1px solid #bdbab3;border-radius:4px;padding:4px 5px 2px;cursor:pointer;z-index:3}
+  #insetwrap svg{width:100%;height:auto;display:block}
+  #insetwrap span{display:block;text-align:center;font-size:12px;color:var(--muted)}
+  #insetwrap:hover{border-color:#1d3550}
+  .i-c{fill:#cfdced;stroke:#fff;stroke-width:.4px} .i-c.on{fill:var(--city)} .i-s{fill:none;stroke:#333;stroke-width:.8px}
+  text.tl{font-style:italic;font-weight:500;fill:#1f4a75;text-anchor:middle;dominant-baseline:middle;pointer-events:none;paint-order:stroke;stroke:rgba(255,255,255,.75)}
+  text.pl{font-weight:700;fill:#111;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:rgba(255,255,255,.9)}
+  text.pl.seat{text-decoration:underline}
+  circle.pd{stroke:#111;pointer-events:none} circle.pd.City{fill:var(--city)} circle.pd.Town{fill:var(--town)} circle.pd.CDP{fill:var(--cdp)}
+  .state{fill:none;stroke:#111;stroke-width:2px;vector-effect:non-scaling-stroke;pointer-events:none}
+  .place{stroke:rgba(0,0,0,.55);stroke-width:.5px;vector-effect:non-scaling-stroke;transition:filter .12s}
+  .place.City{fill:var(--city)} .place.Town{fill:var(--town)} .place.CDP{fill:var(--cdp)}
+  .place:hover,.place.hi{fill:var(--sel);stroke:#000;stroke-width:1.5px}
+  .hidden{display:none}
+  .label{font-size:11px;font-weight:600;fill:#14273b;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:rgba(255,255,255,.7);stroke-width:2.5px}
+  #tip{position:absolute;pointer-events:none;background:rgba(20,20,20,.92);color:#fff;padding:7px 10px;border-radius:6px;font-size:14px;line-height:1.3;max-width:260px;opacity:0;transition:opacity .08s;z-index:5}
+  #tip b{font-size:16px} #tip .k{color:#bbb}
+  .title{position:absolute;left:18px;bottom:16px;background:rgba(207,205,199,.92);padding:10px 16px;border-radius:4px}
+  .title h1{margin:0;font-size:28px;font-weight:700;letter-spacing:.3px}
+  .title p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+  .zoomctl{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:6px}
+  .zoomctl button{width:34px;height:34px;border:none;border-radius:4px;background:var(--panel);font-size:20px;font-weight:700;cursor:pointer;color:var(--ink)}
+  .zoomctl button:hover{background:#bdbab3}
+  aside{background:var(--panel);padding:16px 16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;border-left:3px solid var(--frame)}
+  aside h2{margin:0 0 6px;font-size:20px}
+  .legend label{display:flex;align-items:center;gap:8px;font-size:16px;margin:4px 0;cursor:pointer}
+  .sw{width:18px;height:18px;border:1px solid #333;flex:none}
+  .legend .cnt{margin-left:auto;color:var(--muted);font-size:14px}
+  input[type=search]{width:100%;padding:8px 10px;font:inherit;font-size:15px;border:1px solid #999;border-radius:4px;background:#f4f3ef}
+  #results{list-style:none;margin:6px 0 0;padding:0;max-height:180px;overflow-y:auto}
+  #results li{padding:4px 6px;cursor:pointer;border-radius:3px;font-size:15px}
+  #results li:hover{background:#e6e4de}
+  .badge{display:inline-block;font-size:12px;padding:0 6px;border-radius:3px;color:#fff;margin-left:6px;vertical-align:1px}
+  .badge.City{background:var(--city)} .badge.Town{background:#139a9a} .badge.CDP{background:var(--cdp)} .badge.County{background:var(--county-line)} .badge.Twp{background:#4f7fae}
+  #detail{background:#e8e6df;border-radius:4px;padding:10px 12px;font-size:15px}
+  #detail h3{margin:0 0 4px;font-size:20px}
+  #detail .row{display:flex;justify-content:space-between;border-bottom:1px solid #d6d3cc;padding:3px 0}
+  #detail .links{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+  #detail a.ext{display:inline-block;background:#1d3550;color:#fff;text-decoration:none;font-size:13.5px;padding:3px 9px;border-radius:3px}
+  #detail a.ext:hover{background:#2f5683}
+  #detail .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 8px}
+  #detail .stats div{background:#d9d6cf;border-radius:4px;padding:6px 8px;display:flex;flex-direction:column}
+  #detail .stats b{font-size:20px;line-height:1.1} #detail .stats span{font-size:12.5px;color:var(--muted)}
+  #detail .split{display:flex;height:14px;border-radius:3px;overflow:hidden;margin:6px 0 4px}
+  #detail .split .inc,#detail .splitkey i.inc{background:var(--city)} #detail .split .un,#detail .splitkey i.un{background:var(--twp)}
+  #detail .splitkey{display:flex;justify-content:space-between;font-size:12.5px;gap:6px}
+  #detail .splitkey i{display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:2px}
+  #detail .fine{font-size:12.5px;color:var(--muted);margin:6px 0 0;line-height:1.35}
+  #detail .ptab{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+  #detail .ptab td{padding:2px 0;border-bottom:1px solid #dcd9d2;cursor:pointer} #detail .ptab td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+  #detail .ptab tr:hover td{background:#dedbd4}
+  #detail .seattag{font-size:11px;background:#1d3550;color:#fff;border-radius:3px;padding:0 4px;vertical-align:1px}
+  #detail h4{margin:10px 0 0;font-size:15px}
+  #results .k{color:var(--muted);font-size:13px}
+  #detail ul{margin:6px 0 0;padding-left:0;list-style:none;columns:2;column-gap:12px;font-size:14px}
+  #detail ul li{cursor:pointer;break-inside:avoid;padding:1px 0}
+  #detail ul li:hover{text-decoration:underline}
+  #detail a{color:var(--county-line)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+  .note{font-size:13.5px;line-height:1.4;color:#333}
+  .note p{margin:0 0 7px}
+  .src{font-size:12px;color:var(--muted)}
+  .src a{color:var(--muted)}
+  @media (max-width:820px){.wrap{grid-template-columns:1fr;grid-template-rows:60vh auto;overflow:auto}aside{border-left:none;border-top:3px solid var(--frame)}.title h1{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="map">
+    <svg id="svg"></svg>
+    <svg id="csvg"></svg>
+    <canvas id="anim"></canvas>
+    <div id="insetwrap" title="Back to all of Arkansas"><svg id="inset" viewBox="0 0 160 130"></svg><span>Arkansas</span></div>
+    <div class="zoomctl"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Reset view">⟲</button></div>
+    <button id="back" class="back">← All of Arkansas</button>
+    <div class="title"><h1 id="ttl">Counties &amp; Places of Arkansas</h1><p id="sub">Hover to inspect · click a county to open its map · scroll or drag to pan</p></div>
+    <div id="tip"></div>
+  </div>
+  <aside>
+    <div class="legend">
+      <h2>Layers</h2>
+      <label><input type="checkbox" data-layer="County" checked><span class="sw" style="background:#fff;border:2px solid #1d3550"></span>County borders<span class="cnt" id="n-County"></span></label>
+      <label><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships (MCDs)<span class="cnt" id="n-Twp"></span></label>
+      <label><input type="checkbox" data-layer="City" checked><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
+      <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
+      <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-Designated Places<span class="cnt" id="n-CDP"></span></label>
+      <label><input type="checkbox" id="labels" checked><span class="sw" style="background:#fff"></span>County labels</label>
+    </div>
+    <div>
+      <h2>Find</h2>
+      <input type="search" id="q" placeholder="County, township, city…" autocomplete="off">
+      <ul id="results"></ul>
+    </div>
+    <div id="detail"><h3>Arkansas</h3><div class="row"><span>Counties</span><b>75</b></div><div class="row"><span>Incorporated places</span><b id="d-inc"></b></div><div class="row"><span>Census-designated places</span><b id="d-cdp"></b></div><div class="row"><span>Townships (MCDs)</span><b id="d-twp"></b></div><p class="note" style="margin:8px 0 0">Click a county, township or place for details and links.</p></div>
+    <div class="note">
+      <h2>How Arkansas is divided</h2>
+      <p><b>Counties</b> are the main layer of local government. The <b>county judge</b> is the elected executive, not a judge in the usual sense. The <b>quorum court</b>, made up of justices of the peace, is the legislature. Both were set up by Amendment 55 (1974).</p>
+      <p><b>Cities and towns</b> are incorporated municipalities. The Census counts places of 500 or more people as cities and smaller ones as towns. <b>CDPs</b> are unincorporated communities that the Census defines only for statistics.</p>
+      <p><b>County seats</b> are where the courthouse and county offices sit. Ten Arkansas counties have two seats, mostly a holdover from when travel across the county was slow.</p>
+      <p><b>Townships</b> are Arkansas's minor civil divisions (MCDs). They have no government; today they mostly serve as constable election districts. County courts can merge or redraw them, which is why some counties (Benton, Calhoun, Crawford, Sebastian) now use numbered townships.</p>
+    </div>
+    <div class="src">Boundaries: U.S. Census Bureau TIGER/Line 2024 county subdivisions (townships; counties and state are built from these) and 2019 places. Shapes are simplified for the web. Links, populations (2020 Census), formation years and namesakes come from Wikidata. Quorum court size is the number set by state law for the county's population range; place-to-county assignment uses each place's center, so the city/county split is approximate.</div>
+  </aside>
+</div>
+<script>/*D3*/</script>
+<script>/*TOPO*/</script>
+<script>
+const TOPO = /*DATA*/;
+const fmt = d3.format(",");
+const sqmi = m => { const v=m/2589988.11; return v<10? v.toFixed(2) : v<100? v.toFixed(1) : fmt(Math.round(v)); };
+const twps = topojson.feature(TOPO, TOPO.objects.townships).features;
+const places = topojson.feature(TOPO, TOPO.objects.places).features;
+const CN = TOPO.cnames;
+// counties = merged townships
+const counties = Object.keys(CN).sort().map(cf=>{
+  const geoms = TOPO.objects.townships.geometries.filter(g=>g.properties.cf===cf);
+  const f = {type:"Feature", id:"05"+cf, properties:{cf, n:CN[cf]}, geometry: topojson.merge(TOPO, geoms)};
+  f.properties.la = d3.sum(geoms,g=>g.properties.la); f.properties.wa = d3.sum(geoms,g=>g.properties.wa); return f;});
+const stateF = {type:"Feature", geometry: topojson.merge(TOPO, TOPO.objects.townships.geometries)};
+const countyMesh = topojson.mesh(TOPO, TOPO.objects.townships, (a,b)=>a.properties.cf!==b.properties.cf && a!==b);
+const countyBy = {}; counties.forEach(c=>countyBy[c.properties.cf]=c);
+const twpBy = {}; twps.forEach(t=>twpBy[t.properties.id]=t);
+const placesByC = {}, placesByT = {}, twpsByC = {};
+counties.forEach(c=>{placesByC[c.properties.cf]=[]; twpsByC[c.properties.cf]=[];});
+twps.forEach(t=>{twpsByC[t.properties.cf].push(t); placesByT[t.properties.id]=[];});
+places.forEach(p=>{ if(p.properties.cf){placesByC[p.properties.cf].push(p); placesByT[p.properties.tw].push(p);} });
+const byName=(a,b)=>a.properties.n.localeCompare(b.properties.n,undefined,{numeric:true});
+[placesByC,placesByT,twpsByC].forEach(o=>Object.values(o).forEach(a=>a.sort(byName)));
+const typeCount = t => places.filter(p=>p.properties.t===t).length;
+["City","Town","CDP"].forEach(t=>document.getElementById("n-"+t).textContent=typeCount(t));
+document.getElementById("n-Twp").textContent=fmt(twps.length);
+document.getElementById("n-County").textContent=counties.length;
+document.getElementById("d-inc").textContent=typeCount("City")+typeCount("Town");
+document.getElementById("d-cdp").textContent=typeCount("CDP");
+document.getElementById("d-twp").textContent=fmt(twps.length);
+const typeName = {City:"City",Town:"Town",CDP:"Census-designated place"};
+const cName = cf => CN[cf]+" County";
+
+const mapEl = document.getElementById("map"), svg = d3.select("#svg"), tip = d3.select("#tip");
+const proj = d3.geoConicConformal().parallels([34.33,36.23]).rotate([92.2,0]);
+const path = d3.geoPath(proj);
+const g = svg.append("g");
+const gC=g.append("g"), gT=g.append("g"), gP=g.append("g"), gB=g.append("g"), gL=g.append("g");
+mapEl.classList.add("hide-Twp");
+
+const cSel = gC.selectAll("path").data(counties).join("path").attr("class","county")
+  .on("mousemove",(e,d)=>showTip(e,countyTip(d))).on("mouseleave",hideTip)
+  .on("click",(e,d)=>{e.stopPropagation();hideTip();selectCounty(d);});
+const tSel = gT.selectAll("path").data(twps).join("path").attr("class","twp")
+  .on("mousemove",(e,d)=>showTip(e,twpTip(d))).on("mouseleave",hideTip)
+  .on("click",(e,d)=>{e.stopPropagation();hideTip();selectTwp(d,true);});
+const pSel = gP.selectAll("path").data(places).join("path").attr("class",d=>"place "+d.properties.t)
+  .on("mousemove",(e,d)=>showTip(e,placeTip(d))).on("mouseleave",hideTip)
+  .on("click",(e,d)=>{e.stopPropagation();hideTip();selectPlace(d,false);});
+const bSel = gB.append("path").datum(countyMesh).attr("class","cborder");
+const sSel = gB.append("path").datum(stateF).attr("class","state");
+const lSel = gL.selectAll("text").data(counties).join("text").attr("class","label").text(d=>d.properties.n);
+
+const CI=TOPO.cinfo;
+const cRank=(()=>{const r={};Object.keys(CI).sort((a,b)=>CI[b][0]-CI[a][0]).forEach((cf,i)=>r[cf]=i+1);return r;})();
+const jpCount=p=>p<20000?9:p<50000?11:p<200000?13:15;
+const fmtP=p=>p==null?"—":fmt(p);
+const seatsOf = cf=>places.filter(p=>p.properties.sc&&p.properties.sc.includes(cf));
+const cnt = (a,t)=>a.filter(p=>p.properties.t===t).length;
+function countyTip(d){const a=placesByC[d.properties.cf];
+  const se=seatsOf(d.properties.cf);
+  return `<b>${d.properties.n} County</b><br><span class=k>Population</span> ${fmt(CI[d.properties.cf][0])}<br>Seat: ${se.map(p=>p.properties.n).join(" & ")}<br>${cnt(a,"City")} cities · ${cnt(a,"Town")} towns · ${cnt(a,"CDP")} CDPs<br><span class=k>Click to open the county map</span>`;}
+function twpTip(d){const P=d.properties;
+  return `<b>${P.n}</b><span class="badge Twp">MCD</span><br><span class=k>County</span> ${CN[P.cf]}<br><span class=k>Land area</span> ${sqmi(P.la)} sq mi`;}
+function placeTip(d){const P=d.properties;
+  return `<b>${P.n}</b><span class="badge ${P.t}">${P.t}</span>${P.sc?`<br>County seat of ${P.sc.map(cf=>CN[cf]).join(", ")} County`:""}<br><span class=k>County</span> ${P.cf?CN[P.cf]:"—"}<br><span class=k>Population</span> ${fmtP(P.p)}`;}
+function showTip(e,html){const r=mapEl.getBoundingClientRect();tip.html(html).style("opacity",1);
+  const tw=tip.node().offsetWidth, th=tip.node().offsetHeight;
+  let x=e.clientX-r.left+14, y=e.clientY-r.top+14;
+  if(x+tw>r.width-6) x=e.clientX-r.left-tw-14; if(y+th>r.height-6) y=e.clientY-r.top-th-14;
+  tip.style("left",x+"px").style("top",y+"px");}
+function hideTip(){tip.style("opacity",0);}
+
+const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",()=>svg.classed("moving",false)).on("zoom",e=>{g.attr("transform",e.transform);
+  const s=Math.sqrt(e.transform.k); lSel.style("font-size",(11/s)+"px").style("stroke-width",(2.5/s)+"px");});
+svg.call(zoom).on("click",()=>{pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();});
+
+let W,H;
+function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
+  proj.fitExtent([[24,24],[W-24,H-90]],stateF);
+  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path));
+  lSel.attr("x",d=>path.centroid(d)[0]).attr("y",d=>path.centroid(d)[1]+4);
+  drawInset(); if(openCF) renderCounty(openCF);}
+
+/* ---------- County map: its own map, own projection, own zoom ---------- */
+const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cg = csvg.append("g");
+const cproj = d3.geoConicConformal().parallels([34.33,36.23]).rotate([92.2,0]);
+const cpath = d3.geoPath(cproj);
+let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null);
+const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); cK=e.transform.k; sizeCountyLabels();});
+csvg.call(czoom).on("click",()=>{ if(openCF) selectCounty(countyBy[openCF]); });
+const countyHooks=[]; // per-county layers plug in here: countyHooks.push((cf, ctx)=>{...})
+
+function renderCounty(cf){
+  const C=countyBy[cf];
+  cg.selectAll("*").remove(); cdefs.selectAll("*").remove();
+  cproj.fitExtent([[40,40],[W-40,H-110]],C);
+  cdefs.append("clipPath").attr("id","cclip").append("path").attr("d",cpath(C));
+  cg.append("path").datum(C).attr("class","c-base").attr("d",cpath)
+    .on("mousemove",(e,d)=>showTip(e,`<b>${d.properties.n} County</b><br><span class=k>Unincorporated area — governed by the county</span>`)).on("mouseleave",hideTip);
+  const gTw=cg.append("g").attr("clip-path","url(#cclip)");
+  ctSel=gTw.selectAll("path").data(twpsByC[cf]).join("path").attr("class","twp").attr("d",cpath)
+    .on("mousemove",(e,d)=>showTip(e,twpTip(d))).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();selectTwp(d,false);});
+  const [[bx0,by0],[bx1,by1]]=d3.geoBounds(C);
+  const near=places.filter(p=>{const [[a0,b0],[a1,b1]]=p._b||(p._b=d3.geoBounds(p));return a1>=bx0&&a0<=bx1&&b1>=by0&&b0<=by1;});
+  const gPl=cg.append("g").attr("clip-path","url(#cclip)");
+  cpSel=gPl.selectAll("path").data(near).join("path").attr("class",d=>"place "+d.properties.t+(d.properties.cf===cf?"":" other")).attr("d",cpath)
+    .on("mousemove",(e,d)=>showTip(e,placeTip(d))).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();selectPlace(d,false);});
+  cg.append("path").datum(C).attr("class","c-outline").attr("d",cpath);
+  const hooksLayer=cg.append("g").attr("class","c-hooks");
+  const gLab=cg.append("g").attr("class","c-labels");
+  gLab.selectAll("text.tl").data(twpsByC[cf]).join("text").attr("class","tl")
+    .attr("x",d=>cpath.centroid(d)[0]).attr("y",d=>cpath.centroid(d)[1]).text(d=>d.properties.n.replace(/ Township$/,""));
+  const own=placesByC[cf];
+  gLab.selectAll("circle.pd").data(own).join("circle").attr("class",d=>"pd "+d.properties.t)
+    .attr("cx",d=>cproj(d.properties.ip)[0]).attr("cy",d=>cproj(d.properties.ip)[1]);
+  gLab.selectAll("text.pl").data(own).join("text").attr("class",d=>"pl "+d.properties.t+(d.properties.sc?" seat":""))
+    .attr("x",d=>cproj(d.properties.ip)[0]).attr("y",d=>cproj(d.properties.ip)[1]).text(d=>d.properties.n);
+  csvg.call(czoom.transform,d3.zoomIdentity); sizeCountyLabels();
+  countyHooks.forEach(h=>h(cf,{g:hooksLayer,proj:cproj,path:cpath,county:C}));
+  drawInset();
+}
+function sizeCountyLabels(){const k=cK;
+  cg.selectAll("text.tl").style("font-size",(11/k)+"px").style("stroke-width",(2.4/k)+"px");
+  cg.selectAll("text.pl").attr("dy",-7/k).style("font-size",d=>((d.properties.sc?15:d.properties.t==="City"?12.5:11)/k)+"px").style("stroke-width",(3/k)+"px");
+  cg.selectAll("circle.pd").attr("r",3/k).style("stroke-width",(1/k)+"px");}
+function czoomTo(f,pad=0.4,maxK=25){const [[x0,y0],[x1,y1]]=cpath.bounds(f);
+  const k=Math.max(1,Math.min(maxK,pad/Math.max((x1-x0)/W,(y1-y0)/H)));
+  csvg.transition().duration(600).call(czoom.transform,d3.zoomIdentity.translate(W/2,H/2).scale(k).translate(-(x0+x1)/2,-(y0+y1)/2));}
+
+/* locator inset */
+const inset=d3.select("#inset"), iproj=d3.geoConicConformal().parallels([34.33,36.23]).rotate([92.2,0]), ipath=d3.geoPath(iproj);
+function drawInset(){inset.selectAll("*").remove(); if(!openCF) return;
+  iproj.fitExtent([[6,6],[154,124]],stateF);
+  inset.append("g").selectAll("path").data(counties).join("path").attr("d",ipath).attr("class",d=>"i-c"+(d.properties.cf===openCF?" on":""));
+  inset.append("path").datum(stateF).attr("d",ipath).attr("class","i-s");}
+document.getElementById("insetwrap").onclick=()=>closeCounty();
+
+function countyTransform(cf){const [[x0,y0],[x1,y1]]=path.bounds(countyBy[cf]);
+  const k=Math.min((W-80)/(x1-x0),(H-150)/(y1-y0)), cx=W/2, cy=(40+H-110)/2;
+  return d3.zoomIdentity.translate(cx-k*(x0+x1)/2, cy-k*(y0+y1)/2).scale(k);}
+function setTitles(cf){
+  document.getElementById("ttl").textContent=cf?CN[cf]+" County":"Counties & Places of Arkansas";
+  document.getElementById("sub").textContent=cf?"County seat: "+seatsOf(cf).map(p=>p.properties.n).join(" & ")+" · click a place for details · Esc or ← to return":"Hover to inspect · click a county to open its map · scroll or drag to pan";}
+
+/* Fast transition: the zoom is drawn on a canvas from cached Path2D shapes (cheap per frame),
+   instead of re-rendering ~1,700 SVG paths on every frame. */
+const canvas=document.getElementById("anim"), ctx=canvas.getContext("2d");
+let P2=null; // cached shapes in state-map coordinates
+function buildShapes(){P2={c:counties.map(d=>({cf:d.properties.cf,p:new Path2D(path(d))})),
+  pl:places.map(d=>({cf:d.properties.cf,t:d.properties.t,p:new Path2D(path(d))})),
+  mesh:new Path2D(path(countyMesh)), st:new Path2D(path(stateF))};}
+const COL={City:"#d9302b",Town:"#22c7c7",CDP:"#d28a12"};
+function drawFrame(T,cf,fade){const dpr=window.devicePixelRatio||1;
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.setTransform(dpr*T.k,0,0,dpr*T.k,dpr*T.x,dpr*T.y);
+  const lw=1/T.k, other=1-0.88*fade, hide=c=>mapEl.classList.contains("hide-"+c);
+  for(const s of P2.c){ctx.globalAlpha=s.cf===cf?1:other; ctx.fillStyle="#7fb2e5"; ctx.fill(s.p);}
+  for(const s of P2.pl){ if(hide(s.t)) continue; ctx.globalAlpha=s.cf===cf?1:other*0.9; ctx.fillStyle=COL[s.t]; ctx.fill(s.p);}
+  ctx.globalAlpha=other; ctx.strokeStyle="#1d3550"; ctx.lineWidth=1.3*lw; if(!hide("County")) ctx.stroke(P2.mesh);
+  ctx.lineWidth=2*lw; ctx.strokeStyle="#111"; ctx.stroke(P2.st);
+  ctx.globalAlpha=1; ctx.strokeStyle="#0d1f33"; ctx.lineWidth=2.6*lw; ctx.stroke(P2.c.find(s=>s.cf===cf).p);}
+function animateView(from,to,cf,fadeFrom,fadeTo,ms,done){
+  const dpr=window.devicePixelRatio||1; canvas.width=W*dpr; canvas.height=H*dpr; canvas.style.width=W+"px"; canvas.style.height=H+"px";
+  if(!P2) buildShapes();
+  const ay=(40+H-110)/2, view=T=>{const c=T.invert([W/2,ay]);return [c[0],c[1],W/T.k];};
+  const iz=d3.interpolateZoom(view(from),view(to)), dur=Math.max(ms, Math.min(1100, iz.duration*0.6));
+  mapEl.classList.add("animating"); hideTip();
+  const t0=performance.now();
+  (function step(now){let u=Math.min(1,(now-t0)/dur), e=d3.easeCubicInOut(u);
+    const [x,y,w]=iz(e), k=W/w; drawFrame(d3.zoomIdentity.translate(W/2-x*k,ay-y*k).scale(k),cf,fadeFrom+(fadeTo-fadeFrom)*e);
+    if(u<1) requestAnimationFrame(step); else {mapEl.classList.remove("animating"); done&&done();}})(t0);}
+
+let animating=false;
+function openCounty(cf){
+  if(openCF===cf){setTitles(cf);return;}
+  const fromState=!openCF; openCF=cf; setTitles(cf);
+  if(!fromState||animating){mapEl.classList.add("cview"); renderCounty(cf); return;}
+  animating=true;
+  const from=d3.zoomTransform(svg.node());
+  mapEl.classList.add("anim-on");
+  animateView(from,countyTransform(cf),cf,0,1,700,()=>{
+    renderCounty(cf); mapEl.classList.add("cview"); mapEl.classList.remove("anim-on"); animating=false;});}
+function closeCounty(){if(!openCF||animating)return; const cf=openCF; openCF=null; setTitles(null);
+  pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();
+  animating=true; mapEl.classList.add("anim-on"); mapEl.classList.remove("cview"); drawInset();
+  animateView(countyTransform(cf),d3.zoomIdentity,cf,1,0,650,()=>{
+    svg.call(zoom.transform,d3.zoomIdentity); mapEl.classList.remove("anim-on"); animating=false;});}
+layout(); new ResizeObserver(layout).observe(mapEl);
+
+const det = ()=>document.getElementById("detail");
+const row=(k,v)=>`<div class=row><span>${k}</span><b>${v}</b></div>`;
+const dotList=a=>`<ul>${a.map(p=>`<li data-id="${p.properties.id}"><span class=dot style="background:var(--${p.properties.t?p.properties.t.toLowerCase():"twp"})"></span>${p.properties.n}</li>`).join("")}</ul>`;
+function wire(){det().querySelectorAll("li[data-id]").forEach(li=>li.onclick=()=>{const id=li.dataset.id;
+    const p=places.find(x=>x.properties.id===id); p?selectPlace(p,true):selectTwp(twpBy[id],true);});
+  det().querySelectorAll("a[data-cf]").forEach(a=>a.onclick=e=>{e.preventDefault();selectCounty(countyBy[a.dataset.cf]);});
+  det().querySelectorAll("a[data-pl]").forEach(a=>a.onclick=e=>{e.preventDefault();selectPlace(places.find(p=>p.properties.id===a.dataset.pl),true);});
+  det().querySelectorAll("a[data-tw]").forEach(a=>a.onclick=e=>{e.preventDefault();selectTwp(twpBy[a.dataset.tw],true);});}
+const wpURL=t=>"https://en.wikipedia.org/wiki/"+encodeURIComponent(t.replace(/ /g,"_"));
+const siteURL=s=>/^https?:/.test(s)?s:"https://"+s;
+const ext=(href,label)=>`<a class="ext" href="${href}" target="_blank" rel="noopener">${label} ↗</a>`;
+function linksBlock(wk,ws,fallback){
+  const a=[];
+  if(wk) a.push(ext(wpURL(wk),"Wikipedia"));
+  else if(fallback) a.push(ext(fallback[0],fallback[1]));
+  if(ws) a.push(ext(siteURL(ws),"Official website"));
+  return `<div class="links">${a.join("")}</div>`;}
+const cLink=cf=>`<a href="#" data-cf="${cf}">${CN[cf]}</a>`;
+
+function selectCounty(d){const cf=d.properties.cf;const fresh=openCF!==cf;openCounty(cf);ctSel.classed("hi",false);cpSel.classed("hi",false);
+  if(!fresh) csvg.transition().duration(500).call(czoom.transform,d3.zoomIdentity);
+  const a=placesByC[cf], T=twpsByC[cf], CL=TOPO.clinks[cf], [pop,yr,nm]=CI[cf];
+  const landSq=d.properties.la/2589988.11, S=seatsOf(cf);
+  const inc=d3.sum(a.filter(p=>p.properties.t!=="CDP"),p=>p.properties.p||0), unin=Math.max(0,pop-inc), incPct=Math.min(100,Math.round(inc/pop*100));
+  const byPop=[...a].sort((x,y)=>(y.properties.p||0)-(x.properties.p||0));
+  det().innerHTML=`<h3>${d.properties.n} County<span class="badge County">County</span></h3>
+   ${linksBlock(CL[0],CL[1])}
+   <div class="stats">
+     <div><b>${fmt(pop)}</b><span>people (2020)</span></div>
+     <div><b>#${cRank[cf]}</b><span>of 75 by population</span></div>
+     <div><b>${fmt(Math.round(pop/landSq))}</b><span>per sq mi</span></div>
+     <div><b>${yr}</b><span>year formed</span></div>
+   </div>
+   ${nm?row("Named for",nm):""}
+   ${row(S.length>1?"County seats":"County seat",S.map(p=>`<a href="#" data-pl="${p.properties.id}">${p.properties.n}</a>`).join(" & "))}
+   ${row("Land area",sqmi(d.properties.la)+" sq mi")}${row("FIPS code","05"+cf)}
+   <h4>Government</h4>
+   ${row("County judge","1 (executive)")}
+   ${row("Quorum court",`${jpCount(pop)} justices of the peace`)}
+   ${row("Townships (no government)",T.length)}
+   ${row("Cities / Towns / CDPs",`${cnt(a,"City")} / ${cnt(a,"Town")} / ${cnt(a,"CDP")}`)}
+   <h4>Who governs where people live</h4>
+   <div class="split"><span style="width:${incPct}%" class="inc"></span><span style="width:${100-incPct}%" class="un"></span></div>
+   <div class="splitkey"><span><i class="inc"></i>Cities &amp; towns ≈${incPct}% (${fmt(inc)})</span><span><i class="un"></i>County only ≈${100-incPct}% (${fmt(unin)})</span></div>
+   <p class="fine">People in cities and towns have a mayor and council on top of the county. Everyone else, including CDP residents, is governed directly by the county judge and quorum court.</p>
+   <h4>Places by population</h4>
+   ${a.length?`<table class="ptab">${byPop.map(p=>`<tr data-id="${p.properties.id}"><td><span class=dot style="background:var(--${p.properties.t.toLowerCase()})"></span>${p.properties.n}${p.properties.sc?' <span class="seattag">seat</span>':''}</td><td>${fmtP(p.properties.p)}</td></tr>`).join("")}</table>`:"<p>None</p>"}
+   <h4>Townships</h4>${dotList(T)}`;
+  det().querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>selectPlace(places.find(p=>p.properties.id===tr.dataset.id),true));
+  wire();}
+function selectTwp(d,zoomIt){const P=d.properties;openCounty(P.cf);cpSel.classed("hi",false);ctSel.classed("hi",t=>t===d);
+  if(zoomIt) czoomTo(d,0.55,12);
+  const a=placesByT[P.id];
+  det().innerHTML=`<h3>${P.n}<span class="badge Twp">MCD</span></h3>
+   ${linksBlock(P.wk,P.ws,[wpURL(TOPO.clinks[P.cf][0]),CN[P.cf]+" County on Wikipedia"])}
+   ${row("County",cLink(P.cf))}${row("Land area",sqmi(P.la)+" sq mi")}${row("Water area",sqmi(P.wa)+" sq mi")}
+   ${row("Census GEOID",P.id)}${row("Government","None (nonfunctioning)")}
+   <h4>Places centered here</h4>${a.length?dotList(a):"<p>None</p>"}`;
+  wire();}
+function selectPlace(d,zoomIt){const P=d.properties;if(P.cf&&!(openCF&&d.properties.cf!==openCF&&!zoomIt))openCounty(P.cf);ctSel.classed("hi",false);cpSel.classed("hi",p=>p===d);
+  if(zoomIt) czoomTo(d,0.35,20);
+  det().innerHTML=`<h3>${P.n}<span class="badge ${P.t}">${P.t}</span></h3>
+   ${linksBlock(P.wk,P.ws,["https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(P.n+" Arkansas"),"Search Wikipedia"])}
+   ${row("Population (2020)",fmtP(P.p))}${row("Type",typeName[P.t])}${P.sc?row("County seat",P.sc.map(cf=>cLink(cf)).join(", ")):""}${row("County",P.cf?cLink(P.cf):"—")}
+   ${row("Township",P.tw?`<a href="#" data-tw="${P.tw}">${twpBy[P.tw].properties.n}</a>`:"—")}
+   ${row("Land area",sqmi(P.la)+" sq mi")}${row("Water area",sqmi(P.wa)+" sq mi")}
+   ${row("Census GEOID",P.id)}${row("Incorporated",P.t==="CDP"?"No (statistical only)":"Yes")}`;
+  wire();}
+const defaultDetail=det().innerHTML; function resetDetail(){det().innerHTML=defaultDetail;}
+
+document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>mapEl.classList.toggle("hide-"+cb.dataset.layer,!cb.checked));
+document.getElementById("labels").onchange=e=>mapEl.classList.toggle("hide-labels",!e.target.checked);
+const activeZoom=()=>openCF?[csvg,czoom]:[svg,zoom];
+document.getElementById("zin").onclick=()=>{const [s,z]=activeZoom();s.transition().call(z.scaleBy,1.6);};
+document.getElementById("zout").onclick=()=>{const [s,z]=activeZoom();s.transition().call(z.scaleBy,1/1.6);};
+document.getElementById("zreset").onclick=()=>{const [s,z]=activeZoom();s.transition().duration(500).call(z.transform,d3.zoomIdentity);};
+document.getElementById("back").onclick=e=>{e.stopPropagation();closeCounty();};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&openCF) closeCounty();});
+
+const index=[...counties.map(c=>({n:c.properties.n+" County",t:"County",f:c})),
+  ...twps.map(t=>({n:t.properties.n,sub:CN[t.properties.cf],t:"Twp",f:t})),
+  ...places.map(p=>({n:p.properties.n,t:p.properties.t,f:p}))];
+const q=document.getElementById("q"), res=document.getElementById("results");
+q.oninput=()=>{const s=q.value.trim().toLowerCase(); if(!s){res.innerHTML="";return;}
+  const hits=index.filter(i=>i.n.toLowerCase().includes(s)).sort((a,b)=>a.n.toLowerCase().indexOf(s)-b.n.toLowerCase().indexOf(s)||a.n.localeCompare(b.n)).slice(0,40);
+  res.innerHTML=hits.map((h,i)=>`<li data-i="${i}">${h.n}${h.sub?` <span class=k>(${h.sub})</span>`:""}<span class="badge ${h.t}">${h.t==="Twp"?"MCD":h.t}</span></li>`).join("")||"<li>No matches</li>";
+  res.querySelectorAll("li[data-i]").forEach(li=>li.onclick=()=>{const h=hits[+li.dataset.i];
+    h.t==="County"?selectCounty(h.f):h.t==="Twp"?selectTwp(h.f,true):selectPlace(h.f,true);});};
+</script>
+</body>
+</html>
