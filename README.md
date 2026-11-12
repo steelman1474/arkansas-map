@@ -18,6 +18,8 @@ Open `index.html` in any web browser (double-click it). It works offline.
 | `data/processed/place_pops.json` | 2020 populations of places (from Wikidata) |
 | `data/processed/county_info.json` | County population, year formed, namesake (from Wikidata) |
 | `data/processed/seats.json` | County seats (from Wikidata) |
+| `data/processed/state_parks.tsv` | State parks list: names, counties, acres, year, coordinates, links (edit this to change parks) |
+| `data/processed/state_parks.json` | Same, converted for the build |
 | `data/processed/links.json` | Wikipedia titles and official websites (from Wikidata) |
 
 Counties and the state outline are built from the townships, so their lines match exactly.
@@ -32,4 +34,5 @@ Requires Node.js (https://nodejs.org).
 - Background maps: OpenStreetMap (Map) and Esri World Imagery (Satellite), loaded live
 - U.S. Census Bureau TIGER/Line shapefiles (county subdivisions 2024, places 2019)
 - Wikidata (populations, seats, links, formation dates, namesakes)
+- State parks: Wikipedia "List of Arkansas state parks" table and Wikidata
 - Quorum court size: Arkansas Code § 14-14-402 population ranges

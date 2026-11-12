@@ -35,6 +35,14 @@
   #map.anim-on #svg, #map.anim-on #csvg{visibility:hidden}
   #map.anim-on #insetwrap{display:none}
   .moving .place, .moving .twp{stroke:none}
+  .park{fill:#2e8b3d;stroke:#fff;stroke-width:1.3px;cursor:pointer}
+  .park:hover,.park-g:hover .park,.park-g.hi .park{fill:#5fd06e;stroke:#0b3d14}
+  .park-g{cursor:pointer}
+  text.pkl{font-size:11.5px;font-weight:700;fill:#1d5c27;text-anchor:middle;paint-order:stroke;stroke:rgba(255,255,255,.9);stroke-width:3px;pointer-events:none}
+  #map.bm-sat text.pkl{fill:#d6ffd9;stroke:rgba(0,0,0,.75)}
+  #map.hide-Park .park, #map.hide-Park .park-g{display:none}
+  .badge.Park{background:#2e8b3d}
+  #detail .pklist{list-style:none;padding:0;margin:4px 0 0;font-size:14px} #detail .pklist li{cursor:pointer;padding:1px 0} #detail .pklist li:hover{text-decoration:underline}
   #map.bm-osm .county{fill-opacity:.18} #map.bm-osm .c-base{fill-opacity:.12}
   #map.bm-osm .place{fill-opacity:.5}
   #map.bm-sat .county,#map.bm-sat .c-base{fill-opacity:.04}
@@ -156,6 +164,7 @@
       <label><input type="checkbox" data-layer="City" checked><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
       <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
       <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-Designated Places<span class="cnt" id="n-CDP"></span></label>
+      <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:none;border:none"><svg width="18" height="18" viewBox="-9 -9 18 18"><path d="M0,-7L6.5,5.5L-6.5,5.5Z" fill="#2e8b3d" stroke="#fff" stroke-width="1.2"/></svg></span>State parks<span class="cnt" id="n-Park"></span></label>
       <div class="bmsel"><span>Background</span>
         <label><input type="radio" name="bm" value="none" checked>None</label>
         <label><input type="radio" name="bm" value="osm">Map</label>
@@ -233,6 +242,14 @@ const pSel = gP.selectAll("path").data(places).join("path").attr("class",d=>"pla
   .on("click",(e,d)=>{e.stopPropagation();hideTip();selectPlace(d,false);});
 const bSel = gB.append("path").datum(countyMesh).attr("class","cborder");
 const sSel = gB.append("path").datum(stateF).attr("class","state");
+const PARKS = TOPO.parks; PARKS.forEach((p,i)=>p.id="pk"+i);
+document.getElementById("n-Park").textContent=PARKS.length;
+const parkSym = p=>d3.symbol(d3.symbolTriangle, p.ac? Math.max(70, Math.min(260, 40+Math.sqrt(p.ac)*2.2)) : 70)();
+const gPk = g.append("g").attr("class","parks");
+const pkSel = gPk.selectAll("path").data(PARKS).join("path").attr("class","park").attr("d",parkSym)
+  .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
+  .on("click",(e,d)=>{e.stopPropagation();hideTip();selectPark(d);});
+function placeParks(sel,projection,k){sel.attr("transform",d=>{const [x,y]=projection(d.ll);return `translate(${x},${y}) scale(${1/k})`;});}
 const lSel = gL.selectAll("text").data(counties).join("text").attr("class","label").text(d=>d.properties.n);
 
 const CI=TOPO.cinfo;
@@ -244,6 +261,7 @@ const cnt = (a,t)=>a.filter(p=>p.properties.t===t).length;
 function countyTip(d){const a=placesByC[d.properties.cf];
   const se=seatsOf(d.properties.cf);
   return `<b>${d.properties.n} County</b><br><span class=k>Population</span> ${fmt(CI[d.properties.cf][0])}<br>Seat: ${se.map(p=>p.properties.n).join(" & ")}<br>${cnt(a,"City")} cities · ${cnt(a,"Town")} towns · ${cnt(a,"CDP")} CDPs<br><span class=k>Click to open the county map</span>`;}
+function parkTip(d){return `<b>${d.n}</b><span class="badge Park">State park</span><br><span class=k>County</span> ${d.cf.map(c=>CN[c]).join(", ")}${d.ac?`<br><span class=k>Size</span> ${fmt(d.ac)} acres`:""}${d.y?`<br><span class=k>Established</span> ${d.y}`:""}`;}
 function twpTip(d){const P=d.properties;
   return `<b>${P.n}</b><span class="badge Twp">MCD</span><br><span class=k>County</span> ${CN[P.cf]}<br><span class=k>Land area</span> ${sqmi(P.la)} sq mi`;}
 function placeTip(d){const P=d.properties;
@@ -255,7 +273,7 @@ function showTip(e,html){const r=mapEl.getBoundingClientRect();tip.html(html).st
   tip.style("left",x+"px").style("top",y+"px");}
 function hideTip(){tip.style("opacity",0);}
 
-const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",()=>svg.classed("moving",false)).on("zoom",e=>{g.attr("transform",e.transform); sClip.attr("transform",e.transform); renderTiles(gTiles,proj,e.transform);
+const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",()=>svg.classed("moving",false)).on("zoom",e=>{g.attr("transform",e.transform); sClip.attr("transform",e.transform); placeParks(pkSel,proj,e.transform.k); renderTiles(gTiles,proj,e.transform);
   const s=Math.sqrt(e.transform.k); lSel.style("font-size",(11/s)+"px").style("stroke-width",(2.5/s)+"px");});
 svg.call(zoom).on("click",()=>{pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();});
 
@@ -285,7 +303,7 @@ document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasem
 
 function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
   proj.fitExtent([[24,24],[W-24,H-90]],stateF);
-  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); sClip.attr("d",path(stateF));
+  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); sClip.attr("d",path(stateF)); placeParks(pkSel,proj,d3.zoomTransform(svg.node()).k);
   lSel.attr("x",d=>path.centroid(d)[0]).attr("y",d=>path.centroid(d)[1]+4);
   renderTiles(gTiles,proj,d3.zoomTransform(svg.node()));
   drawInset(); if(openCF) renderCounty(openCF);}
@@ -294,7 +312,7 @@ function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
 const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cgTiles = csvg.append("g").attr("class","tiles").attr("clip-path","url(#ctclip)"), cg = csvg.append("g");
 const cproj = d3.geoMercator();
 const cpath = d3.geoPath(cproj);
-let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null);
+let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null), cpkSel=d3.select(null);
 const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); d3.select("#ctclip path").attr("transform",e.transform); renderTiles(cgTiles,cproj,e.transform); cK=e.transform.k; sizeCountyLabels();});
 csvg.call(czoom).on("click",()=>{ if(openCF) selectCounty(countyBy[openCF]); });
 const countyHooks=[]; // per-county layers plug in here: countyHooks.push((cf, ctx)=>{...})
@@ -322,6 +340,13 @@ function renderCounty(cf){
   const gLab=cg.append("g").attr("class","c-labels");
   gLab.selectAll("text.tl").data(twpsByC[cf]).join("text").attr("class","tl")
     .attr("x",d=>cpath.centroid(d)[0]).attr("y",d=>cpath.centroid(d)[1]).text(d=>d.properties.n.replace(/ Township$/,""));
+  const cparks=PARKS.filter(p=>p.cf.includes(cf));
+  cpkSel=gLab.selectAll("g.cpk").data(cparks).join("g").attr("class","cpk park-g")
+    .attr("data-x",d=>cproj(d.ll)[0]).attr("data-y",d=>cproj(d.ll)[1])
+    .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();selectPark(d,true);});
+  cpkSel.append("path").attr("class","park").attr("d",parkSym);
+  cpkSel.append("text").attr("class","pkl").attr("y",17).text(d=>d.n);
   const own=placesByC[cf];
   gLab.selectAll("circle.pd").data(own).join("circle").attr("class",d=>"pd "+d.properties.t)
     .attr("cx",d=>cproj(d.properties.ip)[0]).attr("cy",d=>cproj(d.properties.ip)[1]);
@@ -332,6 +357,7 @@ function renderCounty(cf){
   drawInset();
 }
 function sizeCountyLabels(){const k=cK;
+  cpkSel.attr("transform",function(){return `translate(${this.dataset.x},${this.dataset.y}) scale(${1/k})`;});
   cg.selectAll("text.tl").style("font-size",(11/k)+"px").style("stroke-width",(2.4/k)+"px");
   cg.selectAll("text.pl").attr("dy",-7/k).style("font-size",d=>((d.properties.sc?15:d.properties.t==="City"?12.5:11)/k)+"px").style("stroke-width",(3/k)+"px");
   cg.selectAll("circle.pd").attr("r",3/k).style("stroke-width",(1/k)+"px");}
@@ -453,10 +479,22 @@ function selectCounty(d){const cf=d.properties.cf;const fresh=openCF!==cf;openCo
    <div class="split"><span style="width:${incPct}%" class="inc"></span><span style="width:${100-incPct}%" class="un"></span></div>
    <div class="splitkey"><span><i class="inc"></i>Cities &amp; towns ≈${incPct}% (${fmt(inc)})</span><span><i class="un"></i>County only ≈${100-incPct}% (${fmt(unin)})</span></div>
    <p class="fine">People in cities and towns have a mayor and council on top of the county. Everyone else, including CDP residents, is governed directly by the county judge and quorum court.</p>
+   ${(()=>{const P=PARKS.filter(p=>p.cf.includes(cf));return P.length?`<h4>State parks</h4><ul class="pklist">${P.map(p=>`<li data-pk="${p.id}"><svg width="11" height="11" viewBox="-7 -7 14 14"><path d="M0,-6L5.5,4.5L-5.5,4.5Z" fill="#2e8b3d"/></svg> ${p.n}</li>`).join("")}</ul>`:"";})()}
    <h4>Places by population</h4>
    ${a.length?`<table class="ptab">${byPop.map(p=>`<tr data-id="${p.properties.id}"><td><span class=dot style="background:var(--${p.properties.t.toLowerCase()})"></span>${p.properties.n}${p.properties.sc?' <span class="seattag">seat</span>':''}</td><td>${fmtP(p.properties.p)}</td></tr>`).join("")}</table>`:"<p>None</p>"}
    <h4>Townships</h4>${dotList(T)}`;
+  det().querySelectorAll("li[data-pk]").forEach(li=>li.onclick=()=>selectPark(PARKS.find(p=>p.id===li.dataset.pk),true));
   det().querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>selectPlace(places.find(p=>p.properties.id===tr.dataset.id),true));
+  wire();}
+function selectPark(d,stay){ if(!(stay&&openCF&&d.cf.includes(openCF))) openCounty(d.pc||d.cf[0]);
+  ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",x=>x===d);
+  const blanch=d.n.startsWith("Blanchard");
+  det().innerHTML=`<h3>${d.n}<span class="badge Park">State park</span></h3>
+   ${linksBlock(d.wk,d.ws,["https://www.arkansasstateparks.com/parks","Arkansas State Parks"])}
+   ${row(d.cf.length>1?"Counties":"County",d.cf.map(c=>cLink(c)).join(", "))}
+   ${d.ac?row("Size",fmt(d.ac)+" acres"):""}${d.y?row("Established",d.y):""}${d.w?row("Water",d.w):""}
+   ${row("Run by",blanch?"Arkansas State Parks (U.S. Forest Service site, by agreement)":"Arkansas State Parks")}
+   <p class="fine">Arkansas State Parks is a division of the state Department of Parks, Heritage and Tourism, so the parks are run by the state rather than the county.</p>`;
   wire();}
 function selectTwp(d,zoomIt){const P=d.properties;openCounty(P.cf);cpSel.classed("hi",false);ctSel.classed("hi",t=>t===d);
   if(zoomIt) czoomTo(d,0.55,12);
@@ -489,13 +527,14 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&openCF) closeCounty
 
 const index=[...counties.map(c=>({n:c.properties.n+" County",t:"County",f:c})),
   ...twps.map(t=>({n:t.properties.n,sub:CN[t.properties.cf],t:"Twp",f:t})),
-  ...places.map(p=>({n:p.properties.n,t:p.properties.t,f:p}))];
+  ...places.map(p=>({n:p.properties.n,t:p.properties.t,f:p})),
+  ...PARKS.map(p=>({n:p.n,t:"Park",f:p}))];
 const q=document.getElementById("q"), res=document.getElementById("results");
 q.oninput=()=>{const s=q.value.trim().toLowerCase(); if(!s){res.innerHTML="";return;}
   const hits=index.filter(i=>i.n.toLowerCase().includes(s)).sort((a,b)=>a.n.toLowerCase().indexOf(s)-b.n.toLowerCase().indexOf(s)||a.n.localeCompare(b.n)).slice(0,40);
-  res.innerHTML=hits.map((h,i)=>`<li data-i="${i}">${h.n}${h.sub?` <span class=k>(${h.sub})</span>`:""}<span class="badge ${h.t}">${h.t==="Twp"?"MCD":h.t}</span></li>`).join("")||"<li>No matches</li>";
+  res.innerHTML=hits.map((h,i)=>`<li data-i="${i}">${h.n}${h.sub?` <span class=k>(${h.sub})</span>`:""}<span class="badge ${h.t}">${h.t==="Twp"?"MCD":h.t==="Park"?"State park":h.t}</span></li>`).join("")||"<li>No matches</li>";
   res.querySelectorAll("li[data-i]").forEach(li=>li.onclick=()=>{const h=hits[+li.dataset.i];
-    h.t==="County"?selectCounty(h.f):h.t==="Twp"?selectTwp(h.f,true):selectPlace(h.f,true);});};
+    h.t==="County"?selectCounty(h.f):h.t==="Twp"?selectTwp(h.f,true):h.t==="Park"?selectPark(h.f):selectPlace(h.f,true);});};
 </script>
 </body>
 </html>

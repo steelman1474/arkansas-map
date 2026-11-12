@@ -25,6 +25,11 @@ for (const p of pl.features) {
 }
 const topo = topology({townships: twp, places: pl}, 2e5);
 topo.cnames = cname;
+// state parks: points; counties = listed counties plus the county the point falls in
+const PARKS = JSON.parse(fs.readFileSync('data/processed/state_parks.json'));
+const cpoly = {}; for (const k of Object.keys(cname)) cpoly[k] = {type:'Feature', geometry: topojson.merge(topo, topo.objects.townships.geometries.filter(g=>g.properties.cf===k))};
+for (const pk of PARKS) { const inn = Object.keys(cpoly).find(k=>d3.geoContains(cpoly[k], pk.ll)); pk.pc = inn; if (inn && !pk.cf.includes(inn)) pk.cf.push(inn); }
+topo.parks = PARKS;
 topo.cinfo = CI;
 topo.clinks = Object.fromEntries(Object.keys(cname).map(cf=>[cf, LK['05'+cf]||[cname[cf]+' County, Arkansas','']]));
 fs.writeFileSync('build/ar.topo.json', JSON.stringify(topo));
