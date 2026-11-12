@@ -29,6 +29,11 @@ topo.cnames = cname;
 const PARKS = JSON.parse(fs.readFileSync('data/processed/state_parks.json'));
 const cpoly = {}; for (const k of Object.keys(cname)) cpoly[k] = {type:'Feature', geometry: topojson.merge(topo, topo.objects.townships.geometries.filter(g=>g.properties.cf===k))};
 for (const pk of PARKS) { const inn = Object.keys(cpoly).find(k=>d3.geoContains(cpoly[k], pk.ll)); pk.pc = inn; if (inn && !pk.cf.includes(inn)) pk.cf.push(inn); }
+// park outlines (OpenStreetMap, simplified) where available
+const OUT = JSON.parse(fs.readFileSync('data/processed/park_outlines.geojson')).features;
+for (const f of OUT) { const pk = PARKS.find(p=>p.n===f.properties.osm_name || p.n.startsWith(f.properties.osm_name));
+  if (!pk) continue; const g=f.geometry; if (d3.geoArea(f) > 2*Math.PI) { if(g.type==='Polygon') g.coordinates.forEach(r=>r.reverse()); else g.coordinates.forEach(p=>p.forEach(r=>r.reverse())); }
+  pk.geo = g; }
 topo.parks = PARKS;
 topo.cinfo = CI;
 topo.clinks = Object.fromEntries(Object.keys(cname).map(cf=>[cf, LK['05'+cf]||[cname[cf]+' County, Arkansas','']]));

@@ -35,6 +35,11 @@
   #map.anim-on #svg, #map.anim-on #csvg{visibility:hidden}
   #map.anim-on #insetwrap{display:none}
   .moving .place, .moving .twp{stroke:none}
+  .park-area{fill:#3aa04a;fill-opacity:.6;stroke:#1f6b2b;stroke-width:1px;vector-effect:non-scaling-stroke;cursor:pointer}
+  .park-area:hover,.park-area.hi{fill:#5fd06e;fill-opacity:.8;stroke:#0b3d14;stroke-width:1.8px}
+  #map.bm-sat .park-area{fill:#5fd06e;fill-opacity:.35;stroke:#9dffa8;stroke-width:1.5px}
+  #map.hide-Park .park-area{display:none}
+  .park-g.has-area{pointer-events:none}
   .park{fill:#2e8b3d;stroke:#fff;stroke-width:1.3px;cursor:pointer}
   .park:hover,.park-g:hover .park,.park-g.hi .park{fill:#5fd06e;stroke:#0b3d14}
   .park-g{cursor:pointer}
@@ -164,7 +169,7 @@
       <label><input type="checkbox" data-layer="City" checked><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
       <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
       <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-Designated Places<span class="cnt" id="n-CDP"></span></label>
-      <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:none;border:none"><svg width="18" height="18" viewBox="-9 -9 18 18"><path d="M0,-7L6.5,5.5L-6.5,5.5Z" fill="#2e8b3d" stroke="#fff" stroke-width="1.2"/></svg></span>State parks<span class="cnt" id="n-Park"></span></label>
+      <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:none;border:none"><svg width="18" height="18" viewBox="-9 -9 18 18"><rect x="-7" y="-7" width="14" height="14" rx="2" fill="#3aa04a" fill-opacity=".6" stroke="#1f6b2b"/></svg></span>State parks<span class="cnt" id="n-Park"></span></label>
       <div class="bmsel"><span>Background</span>
         <label><input type="radio" name="bm" value="none" checked>None</label>
         <label><input type="radio" name="bm" value="osm">Map</label>
@@ -245,8 +250,12 @@ const sSel = gB.append("path").datum(stateF).attr("class","state");
 const PARKS = TOPO.parks; PARKS.forEach((p,i)=>p.id="pk"+i);
 document.getElementById("n-Park").textContent=PARKS.length;
 const parkSym = p=>d3.symbol(d3.symbolTriangle, p.ac? Math.max(70, Math.min(260, 40+Math.sqrt(p.ac)*2.2)) : 70)();
+const gPkA = g.insert("g", ()=>gB.node()).attr("class","parks-area");
+const pkASel = gPkA.selectAll("path").data(PARKS.filter(p=>p.geo)).join("path").attr("class","park-area")
+  .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
+  .on("click",(e,d)=>{e.stopPropagation();hideTip();selectPark(d);});
 const gPk = g.append("g").attr("class","parks");
-const pkSel = gPk.selectAll("path").data(PARKS).join("path").attr("class","park").attr("d",parkSym)
+const pkSel = gPk.selectAll("path").data(PARKS.filter(p=>!p.geo)).join("path").attr("class","park").attr("d",parkSym)
   .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
   .on("click",(e,d)=>{e.stopPropagation();hideTip();selectPark(d);});
 function placeParks(sel,projection,k){sel.attr("transform",d=>{const [x,y]=projection(d.ll);return `translate(${x},${y}) scale(${1/k})`;});}
@@ -303,7 +312,7 @@ document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasem
 
 function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
   proj.fitExtent([[24,24],[W-24,H-90]],stateF);
-  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); sClip.attr("d",path(stateF)); placeParks(pkSel,proj,d3.zoomTransform(svg.node()).k);
+  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); pkASel.attr("d",d=>path(d.geo)); sClip.attr("d",path(stateF)); placeParks(pkSel,proj,d3.zoomTransform(svg.node()).k);
   lSel.attr("x",d=>path.centroid(d)[0]).attr("y",d=>path.centroid(d)[1]+4);
   renderTiles(gTiles,proj,d3.zoomTransform(svg.node()));
   drawInset(); if(openCF) renderCounty(openCF);}
@@ -312,7 +321,7 @@ function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
 const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cgTiles = csvg.append("g").attr("class","tiles").attr("clip-path","url(#ctclip)"), cg = csvg.append("g");
 const cproj = d3.geoMercator();
 const cpath = d3.geoPath(cproj);
-let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null), cpkSel=d3.select(null);
+let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null), cpkSel=d3.select(null), cpkASel=d3.select(null);
 const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); d3.select("#ctclip path").attr("transform",e.transform); renderTiles(cgTiles,cproj,e.transform); cK=e.transform.k; sizeCountyLabels();});
 csvg.call(czoom).on("click",()=>{ if(openCF) selectCounty(countyBy[openCF]); });
 const countyHooks=[]; // per-county layers plug in here: countyHooks.push((cf, ctx)=>{...})
@@ -341,12 +350,17 @@ function renderCounty(cf){
   gLab.selectAll("text.tl").data(twpsByC[cf]).join("text").attr("class","tl")
     .attr("x",d=>cpath.centroid(d)[0]).attr("y",d=>cpath.centroid(d)[1]).text(d=>d.properties.n.replace(/ Township$/,""));
   const cparks=PARKS.filter(p=>p.cf.includes(cf));
-  cpkSel=gLab.selectAll("g.cpk").data(cparks).join("g").attr("class","cpk park-g")
-    .attr("data-x",d=>cproj(d.ll)[0]).attr("data-y",d=>cproj(d.ll)[1])
+  cpkASel=gPl.selectAll("path.park-area").data(cparks.filter(p=>p.geo)).join("path").attr("class","park-area").attr("d",d=>cpath(d.geo))
     .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
     .on("click",(e,d)=>{e.stopPropagation();selectPark(d,true);});
-  cpkSel.append("path").attr("class","park").attr("d",parkSym);
-  cpkSel.append("text").attr("class","pkl").attr("y",17).text(d=>d.n);
+  const lblPt=d=>{ if(d.geo){ const c=cpath.centroid({type:"Feature",geometry:d.geo}); const C=countyBy[cf]; const ll=cproj.invert(c);
+      if(isFinite(c[0]) && d3.geoContains(C,ll)) return c; } return cproj(d.ll); };
+  cpkSel=gLab.selectAll("g.cpk").data(cparks).join("g").attr("class",d=>"cpk park-g"+(d.geo?" has-area":""))
+    .each(function(d){const [x,y]=lblPt(d); this.dataset.x=x; this.dataset.y=y;})
+    .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();selectPark(d,true);});
+  cpkSel.filter(d=>!d.geo).append("path").attr("class","park").attr("d",parkSym);
+  cpkSel.append("text").attr("class","pkl").attr("y",d=>d.geo?4:17).text(d=>d.n);
   const own=placesByC[cf];
   gLab.selectAll("circle.pd").data(own).join("circle").attr("class",d=>"pd "+d.properties.t)
     .attr("cx",d=>cproj(d.properties.ip)[0]).attr("cy",d=>cproj(d.properties.ip)[1]);
@@ -487,12 +501,13 @@ function selectCounty(d){const cf=d.properties.cf;const fresh=openCF!==cf;openCo
   det().querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>selectPlace(places.find(p=>p.properties.id===tr.dataset.id),true));
   wire();}
 function selectPark(d,stay){ if(!(stay&&openCF&&d.cf.includes(openCF))) openCounty(d.pc||d.cf[0]);
-  ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",x=>x===d);
+  ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",x=>x===d);cpkASel.classed("hi",x=>x===d);
   const blanch=d.n.startsWith("Blanchard");
   det().innerHTML=`<h3>${d.n}<span class="badge Park">State park</span></h3>
    ${linksBlock(d.wk,d.ws,["https://www.arkansasstateparks.com/parks","Arkansas State Parks"])}
    ${row(d.cf.length>1?"Counties":"County",d.cf.map(c=>cLink(c)).join(", "))}
    ${d.ac?row("Size",fmt(d.ac)+" acres"):""}${d.y?row("Established",d.y):""}${d.w?row("Water",d.w):""}
+   ${row("Boundary",d.geo?"Outline from OpenStreetMap (approximate)":"Location only (no outline available)")}
    ${row("Run by",blanch?"Arkansas State Parks (U.S. Forest Service site, by agreement)":"Arkansas State Parks")}
    <p class="fine">Arkansas State Parks is a division of the state Department of Parks, Heritage and Tourism, so the parks are run by the state rather than the county.</p>`;
   wire();}
