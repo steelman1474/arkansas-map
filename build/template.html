@@ -35,6 +35,21 @@
   #map.anim-on #svg, #map.anim-on #csvg{visibility:hidden}
   #map.anim-on #insetwrap{display:none}
   .moving .place, .moving .twp{stroke:none}
+  #map.bm-osm .county{fill-opacity:.18} #map.bm-osm .c-base{fill-opacity:.12}
+  #map.bm-osm .place{fill-opacity:.5}
+  #map.bm-sat .county,#map.bm-sat .c-base{fill-opacity:.04}
+  #map.bm-sat .place{fill-opacity:.35;stroke-width:1.2px}
+  #map.bm-sat .place.City{stroke:#ff5a52} #map.bm-sat .place.Town{stroke:#4ff0f0} #map.bm-sat .place.CDP{stroke:#ffb43a}
+  #map.bm-sat .cborder{stroke:#fff;stroke-opacity:.85} #map.bm-sat .c-outline{stroke:#ffe14d}
+  #map.bm-sat .state{stroke:#fff}
+  #map.bm-sat #csvg .twp{stroke:#fff}
+  #map.bm-sat .county:hover{fill:#fff;fill-opacity:.15}
+  .tiles image{pointer-events:none}
+  #attrib{position:absolute;right:14px;bottom:2px;font-size:10.5px;color:#333;background:rgba(255,255,255,.75);padding:1px 6px;border-radius:3px;z-index:3}
+  #attrib:empty{display:none} #attrib a{color:#333}
+  #map.cview #attrib{right:194px}
+  .bmsel{display:flex;align-items:center;gap:10px;margin:8px 0 4px;font-size:15px;flex-wrap:wrap}
+  .bmsel span{font-weight:600} .bmsel label{display:flex;align-items:center;gap:4px;margin:0;cursor:pointer}
   .moving{shape-rendering:optimizeSpeed}
   #map.cview #svg{display:none}
   #map.cview #csvg{display:block;animation:cfade .3s ease-out}
@@ -131,6 +146,7 @@
     <button id="back" class="back">← All of Arkansas</button>
     <div class="title"><h1 id="ttl">Counties &amp; Places of Arkansas</h1><p id="sub">Hover to inspect · click a county to open its map · scroll or drag to pan</p></div>
     <div id="tip"></div>
+    <div id="attrib"></div>
   </div>
   <aside>
     <div class="legend">
@@ -140,6 +156,10 @@
       <label><input type="checkbox" data-layer="City" checked><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
       <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
       <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-Designated Places<span class="cnt" id="n-CDP"></span></label>
+      <div class="bmsel"><span>Background</span>
+        <label><input type="radio" name="bm" value="none" checked>None</label>
+        <label><input type="radio" name="bm" value="osm">Map</label>
+        <label><input type="radio" name="bm" value="sat">Satellite</label></div>
       <label><input type="checkbox" id="labels" checked><span class="sw" style="background:#fff"></span>County labels</label>
     </div>
     <div>
@@ -160,6 +180,7 @@
 </div>
 <script>/*D3*/</script>
 <script>/*TOPO*/</script>
+<script>/*TILE*/</script>
 <script>
 const TOPO = /*DATA*/;
 const fmt = d3.format(",");
@@ -193,8 +214,9 @@ const typeName = {City:"City",Town:"Town",CDP:"Census-designated place"};
 const cName = cf => CN[cf]+" County";
 
 const mapEl = document.getElementById("map"), svg = d3.select("#svg"), tip = d3.select("#tip");
-const proj = d3.geoConicConformal().parallels([34.33,36.23]).rotate([92.2,0]);
+const proj = d3.geoMercator();
 const path = d3.geoPath(proj);
+const gTiles = svg.append("g").attr("class","tiles");
 const g = svg.append("g");
 const gC=g.append("g"), gT=g.append("g"), gP=g.append("g"), gB=g.append("g"), gL=g.append("g");
 mapEl.classList.add("hide-Twp");
@@ -232,23 +254,47 @@ function showTip(e,html){const r=mapEl.getBoundingClientRect();tip.html(html).st
   tip.style("left",x+"px").style("top",y+"px");}
 function hideTip(){tip.style("opacity",0);}
 
-const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",()=>svg.classed("moving",false)).on("zoom",e=>{g.attr("transform",e.transform);
+const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",()=>svg.classed("moving",false)).on("zoom",e=>{g.attr("transform",e.transform); renderTiles(gTiles,proj,e.transform);
   const s=Math.sqrt(e.transform.k); lSel.style("font-size",(11/s)+"px").style("stroke-width",(2.5/s)+"px");});
 svg.call(zoom).on("click",()=>{pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();});
 
 let W,H;
+
+/* ---------- Background map tiles (Map = OpenStreetMap, Satellite = Esri World Imagery) ---------- */
+const BASEMAPS={
+  osm:{url:(x,y,z)=>`https://tile.openstreetmap.org/${z}/${x}/${y}.png`, max:19,
+       attrib:'Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'},
+  sat:{url:(x,y,z)=>`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, max:19,
+       attrib:'Imagery © Esri, Maxar, Earthstar Geographics, USDA, USGS'}};
+let basemap="none";
+function tilesFor(projection,T){const s=projection.scale()*2*Math.PI, tr=projection.translate();
+  return d3.tile().extent([[0,0],[W,H]]).tileSize(256).scale(s*T.k).translate([T.x+tr[0]*T.k, T.y+tr[1]*T.k])();}
+function renderTiles(layer,projection,T){
+  if(basemap==="none"){layer.selectAll("image").remove();return;}
+  const B=BASEMAPS[basemap], tiles=tilesFor(projection,T), [tx,ty]=tiles.translate, k=tiles.scale;
+  layer.selectAll("image").data(tiles.filter(([,,z])=>z<=B.max),d=>basemap+d).join("image")
+    .attr("href",([x,y,z])=>B.url(x,y,z)).attr("x",([x])=>Math.round((x+tx)*k)).attr("y",([,y])=>Math.round((y+ty)*k))
+    .attr("width",Math.ceil(k)+1).attr("height",Math.ceil(k)+1).attr("preserveAspectRatio","none");}
+const tileCache=new Map();
+function tileImg(url){let im=tileCache.get(url); if(!im){im=new Image(); im.crossOrigin="anonymous"; im.src=url; tileCache.set(url,im);} return im;}
+function setBasemap(v){basemap=v; mapEl.classList.remove("bm-osm","bm-sat"); if(v!=="none") mapEl.classList.add("bm-"+v);
+  document.getElementById("attrib").innerHTML=v==="none"?"":BASEMAPS[v].attrib;
+  renderTiles(gTiles,proj,d3.zoomTransform(svg.node())); if(openCF) renderTiles(cgTiles,cproj,d3.zoomTransform(csvg.node()));}
+document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasemap(r.value));
+
 function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
   proj.fitExtent([[24,24],[W-24,H-90]],stateF);
   [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path));
   lSel.attr("x",d=>path.centroid(d)[0]).attr("y",d=>path.centroid(d)[1]+4);
+  renderTiles(gTiles,proj,d3.zoomTransform(svg.node()));
   drawInset(); if(openCF) renderCounty(openCF);}
 
 /* ---------- County map: its own map, own projection, own zoom ---------- */
-const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cg = csvg.append("g");
-const cproj = d3.geoConicConformal().parallels([34.33,36.23]).rotate([92.2,0]);
+const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cgTiles = csvg.append("g").attr("class","tiles"), cg = csvg.append("g");
+const cproj = d3.geoMercator();
 const cpath = d3.geoPath(cproj);
 let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null);
-const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); cK=e.transform.k; sizeCountyLabels();});
+const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); renderTiles(cgTiles,cproj,e.transform); cK=e.transform.k; sizeCountyLabels();});
 csvg.call(czoom).on("click",()=>{ if(openCF) selectCounty(countyBy[openCF]); });
 const countyHooks=[]; // per-county layers plug in here: countyHooks.push((cf, ctx)=>{...})
 
@@ -279,7 +325,7 @@ function renderCounty(cf){
     .attr("cx",d=>cproj(d.properties.ip)[0]).attr("cy",d=>cproj(d.properties.ip)[1]);
   gLab.selectAll("text.pl").data(own).join("text").attr("class",d=>"pl "+d.properties.t+(d.properties.sc?" seat":""))
     .attr("x",d=>cproj(d.properties.ip)[0]).attr("y",d=>cproj(d.properties.ip)[1]).text(d=>d.properties.n);
-  csvg.call(czoom.transform,d3.zoomIdentity); sizeCountyLabels();
+  csvg.call(czoom.transform,d3.zoomIdentity); renderTiles(cgTiles,cproj,d3.zoomIdentity); sizeCountyLabels();
   countyHooks.forEach(h=>h(cf,{g:hooksLayer,proj:cproj,path:cpath,county:C}));
   drawInset();
 }
@@ -316,10 +362,17 @@ function buildShapes(){P2={c:counties.map(d=>({cf:d.properties.cf,p:new Path2D(p
 const COL={City:"#d9302b",Town:"#22c7c7",CDP:"#d28a12"};
 function drawFrame(T,cf,fade){const dpr=window.devicePixelRatio||1;
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height);
+  const bm=basemap!=="none";
+  if(bm){const B=BASEMAPS[basemap], tiles=tilesFor(proj,T), [tx,ty]=tiles.translate, k=tiles.scale;
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle="#e8e6df"; ctx.fillRect(0,0,W,H);
+    for(const [x,y,z] of tiles){ if(z>B.max) continue; const im=tileImg(B.url(x,y,z));
+      if(im.complete&&im.naturalWidth) ctx.drawImage(im,Math.round((x+tx)*k),Math.round((y+ty)*k),Math.ceil(k)+1,Math.ceil(k)+1);}}
   ctx.setTransform(dpr*T.k,0,0,dpr*T.k,dpr*T.x,dpr*T.y);
   const lw=1/T.k, other=1-0.88*fade, hide=c=>mapEl.classList.contains("hide-"+c);
-  for(const s of P2.c){ctx.globalAlpha=s.cf===cf?1:other; ctx.fillStyle="#7fb2e5"; ctx.fill(s.p);}
-  for(const s of P2.pl){ if(hide(s.t)) continue; ctx.globalAlpha=s.cf===cf?1:other*0.9; ctx.fillStyle=COL[s.t]; ctx.fill(s.p);}
+  const cA=bm?(basemap==="sat"?0.04:0.18):1, pA=bm?(basemap==="sat"?0.35:0.5):1;
+  if(bm){ctx.globalAlpha=0.55*fade; ctx.fillStyle="#e8e6df"; for(const s of P2.c) if(s.cf!==cf) ctx.fill(s.p);}
+  for(const s of P2.c){ctx.globalAlpha=(s.cf===cf?1:other)*cA; ctx.fillStyle="#7fb2e5"; ctx.fill(s.p);}
+  for(const s of P2.pl){ if(hide(s.t)) continue; ctx.globalAlpha=(s.cf===cf?1:other*0.9)*pA; ctx.fillStyle=COL[s.t]; ctx.fill(s.p);}
   ctx.globalAlpha=other; ctx.strokeStyle="#1d3550"; ctx.lineWidth=1.3*lw; if(!hide("County")) ctx.stroke(P2.mesh);
   ctx.lineWidth=2*lw; ctx.strokeStyle="#111"; ctx.stroke(P2.st);
   ctx.globalAlpha=1; ctx.strokeStyle="#0d1f33"; ctx.lineWidth=2.6*lw; ctx.stroke(P2.c.find(s=>s.cf===cf).p);}

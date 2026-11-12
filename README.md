@@ -29,6 +29,7 @@ Requires Node.js (https://nodejs.org).
     npm run build
 
 ## Sources
+- Background maps: OpenStreetMap (Map) and Esri World Imagery (Satellite), loaded live
 - U.S. Census Bureau TIGER/Line shapefiles (county subdivisions 2024, places 2019)
 - Wikidata (populations, seats, links, formation dates, namesakes)
 - Quorum court size: Arkansas Code § 14-14-402 population ranges
