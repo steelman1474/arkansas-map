@@ -216,7 +216,8 @@ const cName = cf => CN[cf]+" County";
 const mapEl = document.getElementById("map"), svg = d3.select("#svg"), tip = d3.select("#tip");
 const proj = d3.geoMercator();
 const path = d3.geoPath(proj);
-const gTiles = svg.append("g").attr("class","tiles");
+const sdefs = svg.append("defs"); const sClip = sdefs.append("clipPath").attr("id","sclip").append("path");
+const gTiles = svg.append("g").attr("class","tiles").attr("clip-path","url(#sclip)");
 const g = svg.append("g");
 const gC=g.append("g"), gT=g.append("g"), gP=g.append("g"), gB=g.append("g"), gL=g.append("g");
 mapEl.classList.add("hide-Twp");
@@ -254,7 +255,7 @@ function showTip(e,html){const r=mapEl.getBoundingClientRect();tip.html(html).st
   tip.style("left",x+"px").style("top",y+"px");}
 function hideTip(){tip.style("opacity",0);}
 
-const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",()=>svg.classed("moving",false)).on("zoom",e=>{g.attr("transform",e.transform); renderTiles(gTiles,proj,e.transform);
+const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",()=>svg.classed("moving",false)).on("zoom",e=>{g.attr("transform",e.transform); sClip.attr("transform",e.transform); renderTiles(gTiles,proj,e.transform);
   const s=Math.sqrt(e.transform.k); lSel.style("font-size",(11/s)+"px").style("stroke-width",(2.5/s)+"px");});
 svg.call(zoom).on("click",()=>{pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();});
 
@@ -284,17 +285,17 @@ document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasem
 
 function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
   proj.fitExtent([[24,24],[W-24,H-90]],stateF);
-  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path));
+  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); sClip.attr("d",path(stateF));
   lSel.attr("x",d=>path.centroid(d)[0]).attr("y",d=>path.centroid(d)[1]+4);
   renderTiles(gTiles,proj,d3.zoomTransform(svg.node()));
   drawInset(); if(openCF) renderCounty(openCF);}
 
 /* ---------- County map: its own map, own projection, own zoom ---------- */
-const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cgTiles = csvg.append("g").attr("class","tiles"), cg = csvg.append("g");
+const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cgTiles = csvg.append("g").attr("class","tiles").attr("clip-path","url(#ctclip)"), cg = csvg.append("g");
 const cproj = d3.geoMercator();
 const cpath = d3.geoPath(cproj);
 let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null);
-const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); renderTiles(cgTiles,cproj,e.transform); cK=e.transform.k; sizeCountyLabels();});
+const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); d3.select("#ctclip path").attr("transform",e.transform); renderTiles(cgTiles,cproj,e.transform); cK=e.transform.k; sizeCountyLabels();});
 csvg.call(czoom).on("click",()=>{ if(openCF) selectCounty(countyBy[openCF]); });
 const countyHooks=[]; // per-county layers plug in here: countyHooks.push((cf, ctx)=>{...})
 
@@ -303,6 +304,7 @@ function renderCounty(cf){
   cg.selectAll("*").remove(); cdefs.selectAll("*").remove();
   cproj.fitExtent([[40,40],[W-40,H-110]],C);
   cdefs.append("clipPath").attr("id","cclip").append("path").attr("d",cpath(C));
+  cdefs.append("clipPath").attr("id","ctclip").append("path").attr("d",cpath(C));
   cg.append("path").datum(C).attr("class","c-base").attr("d",cpath)
     .on("mousemove",(e,d)=>showTip(e,`<b>${d.properties.n} County</b><br><span class=k>Unincorporated area — governed by the county</span>`)).on("mouseleave",hideTip);
   const gTw=cg.append("g").attr("clip-path","url(#cclip)");
@@ -365,12 +367,14 @@ function drawFrame(T,cf,fade){const dpr=window.devicePixelRatio||1;
   const bm=basemap!=="none";
   if(bm){const B=BASEMAPS[basemap], tiles=tilesFor(proj,T), [tx,ty]=tiles.translate, k=tiles.scale;
     ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle="#e8e6df"; ctx.fillRect(0,0,W,H);
+    ctx.save(); ctx.setTransform(dpr*T.k,0,0,dpr*T.k,dpr*T.x,dpr*T.y); ctx.clip(P2.st); ctx.setTransform(dpr,0,0,dpr,0,0);
     for(const [x,y,z] of tiles){ if(z>B.max) continue; const im=tileImg(B.url(x,y,z));
-      if(im.complete&&im.naturalWidth) ctx.drawImage(im,Math.round((x+tx)*k),Math.round((y+ty)*k),Math.ceil(k)+1,Math.ceil(k)+1);}}
+      if(im.complete&&im.naturalWidth) ctx.drawImage(im,Math.round((x+tx)*k),Math.round((y+ty)*k),Math.ceil(k)+1,Math.ceil(k)+1);}
+    ctx.restore();}
   ctx.setTransform(dpr*T.k,0,0,dpr*T.k,dpr*T.x,dpr*T.y);
   const lw=1/T.k, other=1-0.88*fade, hide=c=>mapEl.classList.contains("hide-"+c);
   const cA=bm?(basemap==="sat"?0.04:0.18):1, pA=bm?(basemap==="sat"?0.35:0.5):1;
-  if(bm){ctx.globalAlpha=0.55*fade; ctx.fillStyle="#e8e6df"; for(const s of P2.c) if(s.cf!==cf) ctx.fill(s.p);}
+  if(bm){ctx.globalAlpha=fade; ctx.fillStyle="#e8e6df"; for(const s of P2.c) if(s.cf!==cf) ctx.fill(s.p);}
   for(const s of P2.c){ctx.globalAlpha=(s.cf===cf?1:other)*cA; ctx.fillStyle="#7fb2e5"; ctx.fill(s.p);}
   for(const s of P2.pl){ if(hide(s.t)) continue; ctx.globalAlpha=(s.cf===cf?1:other*0.9)*pA; ctx.fillStyle=COL[s.t]; ctx.fill(s.p);}
   ctx.globalAlpha=other; ctx.strokeStyle="#1d3550"; ctx.lineWidth=1.3*lw; if(!hide("County")) ctx.stroke(P2.mesh);
