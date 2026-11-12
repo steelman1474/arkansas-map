@@ -35,6 +35,17 @@
   #map.anim-on #svg, #map.anim-on #csvg{visibility:hidden}
   #map.anim-on #insetwrap{display:none}
   .moving .place, .moving .twp{stroke:none}
+  .hp{fill:#7b3fa0;stroke:#fff;cursor:pointer}
+  .hp:hover,.chp:hover .hp,.chp.hi .hp{fill:#e3b6ff;stroke:#3b1452}
+  .chp{cursor:pointer}
+  #csvg .hp{stroke-width:1.2px}
+  text.hpl{font-size:10.5px;fill:#4a1f63;font-weight:600;paint-order:stroke;stroke:rgba(255,255,255,.9);stroke-width:2.6px;pointer-events:none;display:none}
+  #csvg.hp-labels text.hpl{display:block}
+  #map.bm-sat text.hpl{fill:#f0d9ff;stroke:rgba(0,0,0,.75)}
+  #map.hide-Hist .hp, #map.hide-Hist .chp{display:none}
+  .badge.Hist{background:#7b3fa0}
+  #detail .hplist{list-style:none;padding:0;margin:4px 0 0;font-size:13.5px;max-height:220px;overflow-y:auto;border:1px solid #d6d3cc;border-radius:3px;padding:4px 6px;background:#f1efe9}
+  #detail .hplist li{cursor:pointer;padding:1px 0} #detail .hplist li:hover{text-decoration:underline}
   .park-area{fill:#3aa04a;fill-opacity:.6;stroke:#1f6b2b;stroke-width:1px;vector-effect:non-scaling-stroke;cursor:pointer}
   .park-area:hover,.park-area.hi{fill:#5fd06e;fill-opacity:.8;stroke:#0b3d14;stroke-width:1.8px}
   #map.bm-sat .park-area{fill:#5fd06e;fill-opacity:.35;stroke:#9dffa8;stroke-width:1.5px}
@@ -170,6 +181,7 @@
       <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
       <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-Designated Places<span class="cnt" id="n-CDP"></span></label>
       <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:none;border:none"><svg width="18" height="18" viewBox="-9 -9 18 18"><rect x="-7" y="-7" width="14" height="14" rx="2" fill="#3aa04a" fill-opacity=".6" stroke="#1f6b2b"/></svg></span>State parks<span class="cnt" id="n-Park"></span></label>
+      <label><input type="checkbox" data-layer="Hist" checked><span class="sw" style="background:none;border:none;display:flex;align-items:center;justify-content:center"><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="#7b3fa0" stroke="#fff"/></svg></span>Historic places (NRHP)<span class="cnt" id="n-Hist"></span></label>
       <div class="bmsel"><span>Background</span>
         <label><input type="radio" name="bm" value="none" checked>None</label>
         <label><input type="radio" name="bm" value="osm">Map</label>
@@ -258,6 +270,14 @@ const gPk = g.append("g").attr("class","parks");
 const pkSel = gPk.selectAll("path").data(PARKS.filter(p=>!p.geo)).join("path").attr("class","park").attr("d",parkSym)
   .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
   .on("click",(e,d)=>{e.stopPropagation();hideTip();selectPark(d);});
+const HIST = TOPO.hist; HIST.forEach((h,i)=>h.id="hp"+i);
+document.getElementById("n-Hist").textContent=fmt(HIST.length);
+const histByC={}; HIST.forEach(h=>(histByC[h.cf]=histByC[h.cf]||[]).push(h)); Object.values(histByC).forEach(a=>a.sort((x,y)=>x.n.localeCompare(y.n)));
+const gHp = g.append("g").attr("class","hist");
+const hpSel = gHp.selectAll("circle").data(HIST).join("circle").attr("class","hp")
+  .on("mousemove",(e,d)=>showTip(e,histTip(d))).on("mouseleave",hideTip)
+  .on("click",(e,d)=>{e.stopPropagation();hideTip();selectHist(d);});
+function sizeHist(k){hpSel.attr("r",2.6/k).style("stroke-width",(0.7/k)+"px");}
 function placeParks(sel,projection,k){sel.attr("transform",d=>{const [x,y]=projection(d.ll);return `translate(${x},${y}) scale(${1/k})`;});}
 const lSel = gL.selectAll("text").data(counties).join("text").attr("class","label").text(d=>d.properties.n);
 
@@ -271,6 +291,8 @@ function countyTip(d){const a=placesByC[d.properties.cf];
   const se=seatsOf(d.properties.cf);
   return `<b>${d.properties.n} County</b><br><span class=k>Population</span> ${fmt(CI[d.properties.cf][0])}<br>Seat: ${se.map(p=>p.properties.n).join(" & ")}<br>${cnt(a,"City")} cities · ${cnt(a,"Town")} towns · ${cnt(a,"CDP")} CDPs<br><span class=k>Click to open the county map</span>`;}
 function parkTip(d){return `<b>${d.n}</b><span class="badge Park">State park</span><br><span class=k>County</span> ${d.cf.map(c=>CN[c]).join(", ")}${d.ac?`<br><span class=k>Size</span> ${fmt(d.ac)} acres`:""}${d.y?`<br><span class=k>Established</span> ${d.y}`:""}`;}
+function histTip(d){const P=d.pl&&places.find(p=>p.properties.id===d.pl);
+  return `<b>${d.n}</b><span class="badge Hist">Historic</span><br><span class=k>${P?P.properties.n+", ":""}${CN[d.cf]} County</span><br><span class=k>National Register #${d.r}</span>`;}
 function twpTip(d){const P=d.properties;
   return `<b>${P.n}</b><span class="badge Twp">MCD</span><br><span class=k>County</span> ${CN[P.cf]}<br><span class=k>Land area</span> ${sqmi(P.la)} sq mi`;}
 function placeTip(d){const P=d.properties;
@@ -282,7 +304,7 @@ function showTip(e,html){const r=mapEl.getBoundingClientRect();tip.html(html).st
   tip.style("left",x+"px").style("top",y+"px");}
 function hideTip(){tip.style("opacity",0);}
 
-const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",()=>svg.classed("moving",false)).on("zoom",e=>{g.attr("transform",e.transform); sClip.attr("transform",e.transform); placeParks(pkSel,proj,e.transform.k); renderTiles(gTiles,proj,e.transform);
+const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",e=>{svg.classed("moving",false);sizeHist(e.transform.k);}).on("zoom",e=>{g.attr("transform",e.transform); sClip.attr("transform",e.transform); placeParks(pkSel,proj,e.transform.k); renderTiles(gTiles,proj,e.transform);
   const s=Math.sqrt(e.transform.k); lSel.style("font-size",(11/s)+"px").style("stroke-width",(2.5/s)+"px");});
 svg.call(zoom).on("click",()=>{pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();});
 
@@ -312,7 +334,8 @@ document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasem
 
 function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
   proj.fitExtent([[24,24],[W-24,H-90]],stateF);
-  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); pkASel.attr("d",d=>path(d.geo)); sClip.attr("d",path(stateF)); placeParks(pkSel,proj,d3.zoomTransform(svg.node()).k);
+  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); pkASel.attr("d",d=>path(d.geo));
+  hpSel.attr("cx",d=>proj(d.ll)[0]).attr("cy",d=>proj(d.ll)[1]); sizeHist(d3.zoomTransform(svg.node()).k); sClip.attr("d",path(stateF)); placeParks(pkSel,proj,d3.zoomTransform(svg.node()).k);
   lSel.attr("x",d=>path.centroid(d)[0]).attr("y",d=>path.centroid(d)[1]+4);
   renderTiles(gTiles,proj,d3.zoomTransform(svg.node()));
   drawInset(); if(openCF) renderCounty(openCF);}
@@ -321,7 +344,7 @@ function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
 const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cgTiles = csvg.append("g").attr("class","tiles").attr("clip-path","url(#ctclip)"), cg = csvg.append("g");
 const cproj = d3.geoMercator();
 const cpath = d3.geoPath(cproj);
-let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null), cpkSel=d3.select(null), cpkASel=d3.select(null);
+let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null), cpkSel=d3.select(null), cpkASel=d3.select(null), chpSel=d3.select(null);
 const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); d3.select("#ctclip path").attr("transform",e.transform); renderTiles(cgTiles,cproj,e.transform); cK=e.transform.k; sizeCountyLabels();});
 csvg.call(czoom).on("click",()=>{ if(openCF) selectCounty(countyBy[openCF]); });
 const countyHooks=[]; // per-county layers plug in here: countyHooks.push((cf, ctx)=>{...})
@@ -361,6 +384,13 @@ function renderCounty(cf){
     .on("click",(e,d)=>{e.stopPropagation();selectPark(d,true);});
   cpkSel.filter(d=>!d.geo).append("path").attr("class","park").attr("d",parkSym);
   cpkSel.append("text").attr("class","pkl").attr("y",d=>d.geo?4:17).text(d=>d.n);
+  const chp=histByC[cf]||[];
+  chpSel=gLab.selectAll("g.chp").data(chp).join("g").attr("class","chp")
+    .attr("data-x",d=>cproj(d.ll)[0]).attr("data-y",d=>cproj(d.ll)[1])
+    .on("mousemove",(e,d)=>showTip(e,histTip(d))).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();selectHist(d,true);});
+  chpSel.append("circle").attr("class","hp").attr("r",4.2);
+  chpSel.append("text").attr("class","hpl").attr("x",7).attr("y",3.5).text(d=>d.n);
   const own=placesByC[cf];
   gLab.selectAll("circle.pd").data(own).join("circle").attr("class",d=>"pd "+d.properties.t)
     .attr("cx",d=>cproj(d.properties.ip)[0]).attr("cy",d=>cproj(d.properties.ip)[1]);
@@ -371,6 +401,8 @@ function renderCounty(cf){
   drawInset();
 }
 function sizeCountyLabels(){const k=cK;
+  chpSel.attr("transform",function(){return `translate(${this.dataset.x},${this.dataset.y}) scale(${1/k})`;});
+  csvg.classed("hp-labels", chpSel.size()<=25 || k>=3);
   cpkSel.attr("transform",function(){return `translate(${this.dataset.x},${this.dataset.y}) scale(${1/k})`;});
   cg.selectAll("text.tl").style("font-size",(11/k)+"px").style("stroke-width",(2.4/k)+"px");
   cg.selectAll("text.pl").attr("dy",-7/k).style("font-size",d=>((d.properties.sc?15:d.properties.t==="City"?12.5:11)/k)+"px").style("stroke-width",(3/k)+"px");
@@ -417,6 +449,7 @@ function drawFrame(T,cf,fade){const dpr=window.devicePixelRatio||1;
   if(bm){ctx.globalAlpha=fade; ctx.fillStyle="#e8e6df"; for(const s of P2.c) if(s.cf!==cf) ctx.fill(s.p);}
   for(const s of P2.c){ctx.globalAlpha=(s.cf===cf?1:other)*cA; ctx.fillStyle="#7fb2e5"; ctx.fill(s.p);}
   for(const s of P2.pl){ if(hide(s.t)) continue; ctx.globalAlpha=(s.cf===cf?1:other*0.9)*pA; ctx.fillStyle=COL[s.t]; ctx.fill(s.p);}
+  if(!hide("Hist")){ctx.fillStyle="#7b3fa0"; const r=2.2*lw; for(const h of HIST){ctx.globalAlpha=h.cf===cf?1:other; const [x,y]=proj(h.ll); ctx.fillRect(x-r,y-r,2*r,2*r);}}
   ctx.globalAlpha=other; ctx.strokeStyle="#1d3550"; ctx.lineWidth=1.3*lw; if(!hide("County")) ctx.stroke(P2.mesh);
   ctx.lineWidth=2*lw; ctx.strokeStyle="#111"; ctx.stroke(P2.st);
   ctx.globalAlpha=1; ctx.strokeStyle="#0d1f33"; ctx.lineWidth=2.6*lw; ctx.stroke(P2.c.find(s=>s.cf===cf).p);}
@@ -494,9 +527,11 @@ function selectCounty(d){const cf=d.properties.cf;const fresh=openCF!==cf;openCo
    <div class="splitkey"><span><i class="inc"></i>Cities &amp; towns ≈${incPct}% (${fmt(inc)})</span><span><i class="un"></i>County only ≈${100-incPct}% (${fmt(unin)})</span></div>
    <p class="fine">People in cities and towns have a mayor and council on top of the county. Everyone else, including CDP residents, is governed directly by the county judge and quorum court.</p>
    ${(()=>{const P=PARKS.filter(p=>p.cf.includes(cf));return P.length?`<h4>State parks</h4><ul class="pklist">${P.map(p=>`<li data-pk="${p.id}"><svg width="11" height="11" viewBox="-7 -7 14 14"><path d="M0,-6L5.5,4.5L-5.5,4.5Z" fill="#2e8b3d"/></svg> ${p.n}</li>`).join("")}</ul>`:"";})()}
+   ${(histByC[cf]||[]).length?`<h4>Historic places (${(histByC[cf]||[]).length})</h4><ul class="hplist">${histByC[cf].map(h=>`<li data-hp="${h.id}">${h.n}</li>`).join("")}</ul>`:""}
    <h4>Places by population</h4>
    ${a.length?`<table class="ptab">${byPop.map(p=>`<tr data-id="${p.properties.id}"><td><span class=dot style="background:var(--${p.properties.t.toLowerCase()})"></span>${p.properties.n}${p.properties.sc?' <span class="seattag">seat</span>':''}</td><td>${fmtP(p.properties.p)}</td></tr>`).join("")}</table>`:"<p>None</p>"}
    <h4>Townships</h4>${dotList(T)}`;
+  det().querySelectorAll("li[data-hp]").forEach(li=>li.onclick=()=>selectHist(HIST.find(h=>h.id===li.dataset.hp),true));
   det().querySelectorAll("li[data-pk]").forEach(li=>li.onclick=()=>selectPark(PARKS.find(p=>p.id===li.dataset.pk),true));
   det().querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>selectPlace(places.find(p=>p.properties.id===tr.dataset.id),true));
   wire();}
@@ -510,6 +545,15 @@ function selectPark(d,stay){ if(!(stay&&openCF&&d.cf.includes(openCF))) openCoun
    ${row("Boundary",d.geo?"Outline from OpenStreetMap (approximate)":"Location only (no outline available)")}
    ${row("Run by",blanch?"Arkansas State Parks (U.S. Forest Service site, by agreement)":"Arkansas State Parks")}
    <p class="fine">Arkansas State Parks is a division of the state Department of Parks, Heritage and Tourism, so the parks are run by the state rather than the county.</p>`;
+  wire();}
+function selectHist(d,stay){ if(!(stay&&openCF===d.cf)) openCounty(d.cf);
+  ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",false);cpkASel.classed("hi",false);chpSel.classed("hi",x=>x===d);
+  const P=d.pl&&places.find(p=>p.properties.id===d.pl);
+  det().innerHTML=`<h3>${d.n}<span class="badge Hist">Historic</span></h3>
+   ${linksBlock(d.wk,null,null)}<div class="links">${ext("https://npgallery.nps.gov/AssetDetail/NRIS/"+d.r,"National Register file")}</div>
+   ${row("Listing","National Register of Historic Places")}${row("Reference #",d.r)}
+   ${row("County",cLink(d.cf))}${row("In",P?`<a href="#" data-pl="${P.properties.id}">${P.properties.n}</a>`:"Unincorporated area")}
+   <p class="fine">The National Register is the federal list of places worth preserving. Listing is mostly honorary: it doesn't stop a private owner from changing or tearing down a building, but it can qualify the property for tax credits and grants.</p>`;
   wire();}
 function selectTwp(d,zoomIt){const P=d.properties;openCounty(P.cf);cpSel.classed("hi",false);ctSel.classed("hi",t=>t===d);
   if(zoomIt) czoomTo(d,0.55,12);
@@ -543,13 +587,14 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&openCF) closeCounty
 const index=[...counties.map(c=>({n:c.properties.n+" County",t:"County",f:c})),
   ...twps.map(t=>({n:t.properties.n,sub:CN[t.properties.cf],t:"Twp",f:t})),
   ...places.map(p=>({n:p.properties.n,t:p.properties.t,f:p})),
-  ...PARKS.map(p=>({n:p.n,t:"Park",f:p}))];
+  ...PARKS.map(p=>({n:p.n,t:"Park",f:p})),
+  ...HIST.map(h=>({n:h.n,sub:CN[h.cf],t:"Hist",f:h}))];
 const q=document.getElementById("q"), res=document.getElementById("results");
 q.oninput=()=>{const s=q.value.trim().toLowerCase(); if(!s){res.innerHTML="";return;}
   const hits=index.filter(i=>i.n.toLowerCase().includes(s)).sort((a,b)=>a.n.toLowerCase().indexOf(s)-b.n.toLowerCase().indexOf(s)||a.n.localeCompare(b.n)).slice(0,40);
-  res.innerHTML=hits.map((h,i)=>`<li data-i="${i}">${h.n}${h.sub?` <span class=k>(${h.sub})</span>`:""}<span class="badge ${h.t}">${h.t==="Twp"?"MCD":h.t==="Park"?"State park":h.t}</span></li>`).join("")||"<li>No matches</li>";
+  res.innerHTML=hits.map((h,i)=>`<li data-i="${i}">${h.n}${h.sub?` <span class=k>(${h.sub})</span>`:""}<span class="badge ${h.t}">${h.t==="Twp"?"MCD":h.t==="Park"?"State park":h.t==="Hist"?"Historic":h.t}</span></li>`).join("")||"<li>No matches</li>";
   res.querySelectorAll("li[data-i]").forEach(li=>li.onclick=()=>{const h=hits[+li.dataset.i];
-    h.t==="County"?selectCounty(h.f):h.t==="Twp"?selectTwp(h.f,true):h.t==="Park"?selectPark(h.f):selectPlace(h.f,true);});};
+    h.t==="County"?selectCounty(h.f):h.t==="Twp"?selectTwp(h.f,true):h.t==="Park"?selectPark(h.f):h.t==="Hist"?selectHist(h.f):selectPlace(h.f,true);});};
 </script>
 </body>
 </html>

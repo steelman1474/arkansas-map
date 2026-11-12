@@ -35,6 +35,19 @@ for (const f of OUT) { const pk = PARKS.find(p=>p.n===f.properties.osm_name || p
   if (!pk) continue; const g=f.geometry; if (d3.geoArea(f) > 2*Math.PI) { if(g.type==='Polygon') g.coordinates.forEach(r=>r.reverse()); else g.coordinates.forEach(p=>p.forEach(r=>r.reverse())); }
   pk.geo = g; }
 topo.parks = PARKS;
+// National Register of Historic Places (from Wikidata): keep points inside Arkansas; find county and city
+const rows = fs.readFileSync('data/processed/nrhp_wikidata.tsv','utf8').trim().split('\n').slice(1).map(l=>l.split('\t'));
+const plBoxes = pl.features.map(f=>({f, b:d3.geoBounds(f)}));
+const HP = [];
+for (const [qid, ref, lon, lat, label, wiki] of rows) {
+  const ll = [+lon, +lat];
+  const cf = Object.keys(cpoly).find(k=>d3.geoContains(cpoly[k], ll));
+  if (!cf) continue; // outside Arkansas
+  const inPl = plBoxes.find(({f,b})=>ll[0]>=b[0][0]&&ll[0]<=b[1][0]&&ll[1]>=b[0][1]&&ll[1]<=b[1][1]&&d3.geoContains(f,ll));
+  HP.push({n: label || wiki || ref, r: ref.split(',')[0], wk: wiki || undefined, ll, cf, pl: inPl ? inPl.f.properties.id : undefined});
+}
+topo.hist = HP;
+console.log('historic places in Arkansas', HP.length);
 topo.cinfo = CI;
 topo.clinks = Object.fromEntries(Object.keys(cname).map(cf=>[cf, LK['05'+cf]||[cname[cf]+' County, Arkansas','']]));
 fs.writeFileSync('build/ar.topo.json', JSON.stringify(topo));
