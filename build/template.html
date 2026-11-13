@@ -59,6 +59,25 @@
   #map.anim-on #svg, #map.anim-on #csvg{visibility:hidden}
   #map.anim-on #insetwrap{display:none}
   .moving .place, .moving .twp{stroke:none}
+  .land{stroke-width:.6px;vector-effect:non-scaling-stroke;fill-opacity:.42}
+  .t-nf{fill:#5ea85a;stroke:#3f7a3b;fill-opacity:.5} .t-np{fill:#d08a3c;stroke:#8a5420;fill-opacity:.62} .t-nwr{fill:#d08a3c;stroke:#8a5420;fill-opacity:.45}
+  .t-wild,.t-na{fill:#4f8a5b;stroke:#2f5d39} .t-lp{fill:#8fd18a;stroke:#4f9a4a;fill-opacity:.6} .t-mil{fill:#9a9a8a;stroke:#5e5e52} .t-oth{fill:#a7c79a;stroke:#6b8f5e} .t-wma{fill:#c9b458;stroke:#8a7a2c;fill-opacity:.35}
+  .lake{fill:#2e6db4;stroke:#1d4f8c;stroke-width:.5px;vector-effect:non-scaling-stroke}
+  .river{fill:none;stroke:#2563a8;vector-effect:non-scaling-stroke;stroke-linecap:round}
+  .river.o3{stroke-width:.6px;stroke-opacity:.7} .river.o4{stroke-width:.9px} .river.o5{stroke-width:1.2px} .river.o6{stroke-width:1.6px} .river.o7{stroke-width:2.2px} .river.o8{stroke-width:3px}
+  #svg .river.o6{stroke-width:.9px} #svg .river.o7{stroke-width:1.4px} #svg .river.o8{stroke-width:2px}
+  #svg .nature *{pointer-events:none}
+  .c-nature .land,.c-nature .lake{cursor:pointer}
+  .c-nature .land:hover{fill-opacity:.6} .c-nature .lake:hover{fill:#4a8bd4}
+  .c-nature .sel{stroke:var(--flag)!important;stroke-width:2.6px!important}
+  .c-nature .river.sel{stroke-opacity:1}
+  .shade image{mix-blend-mode:multiply;opacity:.5;pointer-events:none}
+  .c-flood image{pointer-events:none}
+  #map.hide-Water .river,#map.hide-Water .lake{display:none}
+  #map.hide-NF .L-NF,#map.hide-NPW .L-NPW,#map.hide-WMA .L-WMA,#map.hide-WN .L-WN,#map.hide-LP .L-LP,#map.hide-MIL .L-MIL{display:none}
+  #map.hide-Terrain .shade{display:none}
+  .flnote{margin:2px 6px 4px 29px;font-size:11.5px;color:var(--muted)}
+  .badge.Land{background:#4f8a5b} .badge.Water{background:#2f7fbf}
   .hwy,.road{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
   .road{stroke:#fff;stroke-opacity:.85;stroke-width:.8px}
   .road.c-City{stroke-opacity:.7;stroke-width:.7px}
@@ -270,6 +289,17 @@
         <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:#3aa04a"></span>State parks<span class="cnt" id="n-Park"></span></label>
         <label><input type="checkbox" data-layer="Hist"><span class="sw" style="background:#7b3fa0;border-radius:50%"></span>Historic places<span class="cnt" id="n-Hist"></span></label>
         <hr>
+        <label><input type="checkbox" data-layer="Water" checked><span class="sw" style="background:#2e6db4"></span>Rivers &amp; lakes</label>
+        <label><input type="checkbox" data-layer="NF" checked><span class="sw" style="background:#6fae6a"></span>National forests</label>
+        <label><input type="checkbox" data-layer="NPW" checked><span class="sw" style="background:#d08a3c"></span>National parks &amp; refuges</label>
+        <label><input type="checkbox" data-layer="WMA"><span class="sw" style="background:#c9b458"></span>Wildlife management areas</label>
+        <label><input type="checkbox" data-layer="WN"><span class="sw" style="background:#4f8a5b"></span>Wilderness &amp; natural areas</label>
+        <label><input type="checkbox" data-layer="LP"><span class="sw" style="background:#8fd18a"></span>City &amp; county parks</label>
+        <label><input type="checkbox" data-layer="MIL"><span class="sw" style="background:#9a9a8a"></span>Military land</label>
+        <label><input type="checkbox" data-layer="Terrain"><span class="sw" style="background:linear-gradient(135deg,#fff,#7d8790)"></span>Terrain shading</label>
+        <label><input type="checkbox" data-layer="Flood"><span class="sw" style="background:repeating-linear-gradient(45deg,#3b7dd8 0 3px,#bcd4f4 3px 6px)"></span>Flood zones</label>
+        <p class="flnote">Flood zones show on county maps.</p>
+        <hr>
         <label class="rd"><input type="checkbox" data-layer="Hwy" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 4px no-repeat,#f2c14e;border-color:#8a6d1f"></span>Highways</label>
         <label class="rd"><input type="checkbox" data-layer="Road"><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 2px no-repeat,var(--county)"></span>County &amp; local roads</label>
         <p class="rdnote">Roads show on the Plain background only.</p>
@@ -349,11 +379,11 @@ const cName = cf => CN[cf]+" County";
 const mapEl = document.getElementById("map"), svg = d3.select("#svg"), tip = d3.select("#tip");
 const proj = d3.geoMercator();
 const path = d3.geoPath(proj);
-const sdefs = svg.append("defs"); const sClip = sdefs.append("clipPath").attr("id","sclip").append("path");
+const sdefs = svg.append("defs"); const sClip = sdefs.append("clipPath").attr("id","sclip").append("path"); const sClipM = sdefs.append("clipPath").attr("id","sclipm").append("path");
 const gTiles = svg.append("g").attr("class","tiles").attr("clip-path","url(#sclip)");
 const g = svg.append("g");
-const gC=g.append("g"), gT=g.append("g"), gP=g.append("g"), gB=g.append("g"), gL=g.append("g");
-mapEl.classList.add("hide-Twp","hide-Hist","hide-Road");
+const gC=g.append("g"), gShade=g.append("g").attr("class","shade").attr("clip-path","url(#sclipm)"), gNat=g.append("g").attr("class","nature").attr("clip-path","url(#sclipm)"), gT=g.append("g"), gP=g.append("g"), gB=g.append("g"), gL=g.append("g");
+mapEl.classList.add("hide-Twp","hide-Hist","hide-Road","hide-WMA","hide-WN","hide-LP","hide-MIL","hide-Terrain","hide-Flood");
 
 const cSel = gC.selectAll("path").data(counties).join("path").attr("class","county")
   .on("mousemove",(e,d)=>showTip(e,countyTip(d))).on("mouseleave",hideTip)
@@ -445,7 +475,7 @@ function routeInCounty(feats,C,cf){ // length without double-counting divided ca
       if(i%3===1){const pl=pls.find(q=>d3.geoContains(q,mid)); if(pl) towns.add(pl.properties.n);}}}
   let m=0; for(const v of cells.values()) m+=v;
   return {miles:m*6371008.8/1609.34, towns:[...towns]};}
-function selectHighway(k,cf,seg){ if(!k) return; selRoad=null;
+function selectHighway(k,cf,seg){ if(!k) return; selRoad=null; cg.selectAll(".c-nature .sel").classed("sel",false);
   ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",false);cpkASel.classed("hi",false);chpSel.classed("hi",false);
   cg.selectAll("g.c-roads .vis path").classed("sel",false);
   const lines=cg.selectAll("g.c-roads .thwy path").filter(d=>keyTiger(d.properties)===k).classed("sel",true).data();
@@ -467,7 +497,7 @@ function acfTip(d){const P=d.properties; return `<b>${roadTitle(P)}</b>${P.r&&P.
 function markRoad(d){selRoad=d; cg.selectAll("g.c-roads .vis path").classed("sel",false); cg.selectAll("g.c-roads .vis path").classed("sel",x=>x===d||(x.properties.r&&x.properties.r===d.properties.r&&d.properties.c==="State"&&x.properties.c==="State")||(!d.properties.r&&d.properties.n&&x.properties.n===d.properties.n&&x.properties.c===d.properties.c));}
 const wikiRoute=r=>{const m=r.match(/(\d+[A-Z]?)/); if(!m) return null; const n=m[1];
   return /^Interstate/.test(r)?`Interstate ${n} in Arkansas`:/^U\.S\./.test(r)?`U.S. Route ${n} in Arkansas`:`Arkansas Highway ${n}`;};
-function selectRoad(d,cf){const P=d.properties; markRoad(d);
+function selectRoad(d,cf){const P=d.properties; cg.selectAll(".c-nature .sel").classed("sel",false); markRoad(d);
   ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",false);cpkASel.classed("hi",false);chpSel.classed("hi",false);
   // the named road as a whole within this county
   const same=(roadCache[cf]||[]).filter(x=>x===d||(P.c==="State"&&P.r?x.properties.r===P.r&&x.properties.c==="State":P.n&&x.properties.n===P.n&&x.properties.c===P.c));
@@ -511,6 +541,89 @@ const hpSel = gHp.selectAll("circle").data(HIST).join("circle").attr("class","hp
   .on("mousemove",(e,d)=>showTip(e,histTip(d))).on("mouseleave",hideTip)
   .on("click",(e,d)=>{e.stopPropagation();hideTip();selectHist(d);});
 function sizeHist(k){hpSel.attr("r",2.6/k).style("stroke-width",(0.7/k)+"px");}
+
+/* ---------- Land & water ---------- */
+const LANDKIND={nf:"National forest",np:"National park site",nwr:"National wildlife refuge",wild:"Wilderness area",na:"Natural area",mil:"Military land",lp:"City or county park",oth:"Public land",wma:"Wildlife management area"};
+const LANDWHO={nf:"U.S. Forest Service",np:"National Park Service",nwr:"U.S. Fish and Wildlife Service",wild:"Federal agency managing the surrounding land (usually the U.S. Forest Service or National Park Service)",
+  na:"Arkansas Natural Heritage Commission (most natural areas)",mil:"U.S. military or Arkansas National Guard",lp:"The city or county",oth:"A public agency",wma:"Arkansas Game and Fish Commission"};
+const landLayer=k=>({nf:"NF",np:"NPW",nwr:"NPW",wild:"WN",na:"WN",lp:"LP",mil:"MIL",oth:"LP",wma:"WMA"})[k];
+let NAT=null;
+fetch("data/web/nature.topo.json").then(r=>r.json()).then(tj=>{
+  const F=k=>topojson.feature(tj,tj.objects[k]).features.filter(f=>f.geometry);
+  const fix=f=>{ if(d3.geoArea(f)>2*Math.PI){const g=f.geometry; if(g.type==="Polygon") g.coordinates.forEach(r=>r.reverse()); else g.coordinates.forEach(p=>p.forEach(r=>r.reverse()));} return f;};
+  NAT={rivers:F("rivers").flatMap(f=>f.properties.n||f.geometry.type!=="MultiLineString"?[f]:f.geometry.coordinates.map(c=>({type:"Feature",properties:f.properties,geometry:{type:"LineString",coordinates:c}}))), lakes:F("lakes").map(fix), lands:F("lands").map(fix), wma:F("wma").map(fix)};
+  NAT.wma.forEach(f=>f.properties.t="wma");
+  /* the source layer tags a stray parcel in Ashley County as Ouachita National Forest; the forest is entirely in west-central Arkansas */
+  NAT.lands.forEach(f=>{if(f.properties.n==="Ouachita National Forest"&&f.geometry.type==="MultiPolygon") f.geometry.coordinates=f.geometry.coordinates.filter(p=>p[0][0][1]>34);});
+  NAT.areas=[...NAT.lands,...NAT.wma].sort((a,b)=>d3.geoArea(b)-d3.geoArea(a));
+  drawStateNature(); if(openCF) drawCountyNature(openCF);
+}).catch(e=>console.error("land and water layer failed:",e));
+const landCls=d=>"land t-"+d.properties.t+" L-"+landLayer(d.properties.t);
+const riverCls=d=>"river o"+Math.min(8,d.properties.o||3);
+function drawStateNature(){ if(!NAT) return; gNat.selectAll("*").remove();
+  gNat.append("g").selectAll("path").data(NAT.areas).join("path").attr("class",landCls).attr("d",path);
+  gNat.append("g").selectAll("path").data(NAT.lakes.filter(l=>l.properties.a>=0.5)).join("path").attr("class","lake").attr("d",path);
+  gNat.append("g").selectAll("path").data(NAT.rivers.filter(r=>r.properties.o>=6)).join("path").attr("class",riverCls).attr("d",path);}
+function drawCountyNature(cf){ if(!NAT||openCF!==cf) return; const layer=cg.select("g.c-nature"); if(layer.empty()) return; layer.selectAll("*").remove();
+  const C=countyBy[cf], [[x0,y0],[x1,y1]]=d3.geoBounds(C);
+  const inBox=f=>{const [[a0,b0],[a1,b1]]=f._b||(f._b=d3.geoBounds(f)); return a1>=x0&&a0<=x1&&b1>=y0&&b0<=y1;};
+  layer.append("g").selectAll("path").data(NAT.areas.filter(inBox)).join("path").attr("class",landCls).attr("d",cpath)
+    .on("mousemove",(e,d)=>showTip(e,`<b>${d.properties.n||LANDKIND[d.properties.t]}</b><br><span class=k>${LANDKIND[d.properties.t]} · click for details</span>`)).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();hideTip();selectLand(d,cf);});
+  layer.append("g").selectAll("path").data(NAT.lakes.filter(inBox)).join("path").attr("class","lake").attr("d",cpath)
+    .on("mousemove",(e,d)=>showTip(e,`<b>${d.properties.n||"Unnamed "+d.properties.t.toLowerCase()}</b><br><span class=k>${d.properties.t} · ${fmt(Math.round(d.properties.a*247.1))} acres</span>`)).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();hideTip();selectWater(d,"lake",cf);});
+  const rv=NAT.rivers.filter(inBox);
+  layer.append("g").selectAll("path").data(rv).join("path").attr("class",riverCls).attr("d",cpath);
+  layer.append("g").attr("class","hits").selectAll("path").data(rv).join("path").attr("class",d=>riverCls(d)+" hit").attr("d",cpath)
+    .on("mousemove",(e,d)=>showTip(e,`<b>${d.properties.n||"Unnamed stream"}</b><br><span class=k>${waterKind(d.properties.n)} · click for details</span>`)).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();hideTip();selectWater(d,"river",cf);});}
+const waterKind=n=>/river/i.test(n||"")?"River":/bayou/i.test(n||"")?"Bayou":/creek/i.test(n||"")?"Creek":"Stream";
+function countiesTouched(f){const g=f.geometry, pts=[]; const walk=a=>typeof a[0]==="number"?pts.push(a):a.forEach(walk); walk(g.coordinates);
+  const step=Math.max(1,Math.floor(pts.length/400)), hit=new Set(); for(let i=0;i<pts.length;i+=step){const c=counties.find(c=>d3.geoContains(c,pts[i])); if(c) hit.add(c.properties.cf);} return [...hit].sort((a,b)=>CN[a].localeCompare(CN[b]));}
+function clearSel(){ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",false);cpkASel.classed("hi",false);chpSel.classed("hi",false);
+  cg.selectAll(".c-nature .sel, g.c-roads .vis .sel").classed("sel",false);}
+function selectLand(d,cf){const P=d.properties; clearSel(); cg.selectAll(".c-nature .land").classed("sel",x=>x===d);
+  const C=countiesTouched(d), acres=P.ac>0?P.ac:d3.geoArea(d)*6371008.8**2/4046.86;
+  const inC=d3.geoArea(d)>0?null:null;
+  det().innerHTML=hero(LANDKIND[P.t],"Land",P.n||LANDKIND[P.t],`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent((P.n||"")+" Arkansas"),"Search Wikipedia")}</div>`,P.ty||LANDKIND[P.t])+
+    stat(fmt(Math.round(acres)),"acres","accent")+stat(C.length,C.length===1?"county":"counties")+
+    rows("",row("Managed by",LANDWHO[P.t])+row(C.length===1?"County":"Counties",C.map(c=>cLink(c)).join(", ")))+
+    tile("span2 note",P.t==="nf"?"National forest land within the boundary can include private inholdings; the outline shows the forest's proclaimed boundary.":P.t==="wma"?"Wildlife management areas are open to the public for hunting, fishing and wildlife viewing under Game and Fish rules.":"Boundaries come from ArDOT's public lands layer and the Arkansas GIS Office; acreage is approximate.");
+  wire();}
+function selectWater(d,kind,cf){const P=d.properties; clearSel(); cg.selectAll(kind==="lake"?".c-nature .lake":".c-nature .river:not(.hit)").classed("sel",x=>x===d||(kind==="river"&&P.n&&x.properties.n===P.n));
+  const C=countiesTouched(d);
+  if(kind==="lake"){
+    det().innerHTML=hero(P.t,"Water",P.n||"Unnamed "+P.t.toLowerCase(),P.n?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(P.n+" Arkansas"),"Search Wikipedia")}</div>`:"",C.map(c=>cLink(c)+" County").join(", "))+
+      stat(fmt(Math.round(P.a*247.1)),"acres of water","accent")+stat(P.a.toFixed(P.a<1?2:1),"square kilometers")+
+      tile("span2 note",P.t==="Reservoir"?"A reservoir is a lake made by a dam. Most large lakes in Arkansas are reservoirs built by the U.S. Army Corps of Engineers or utilities.":"Outline from the U.S. Geological Survey's National Hydrography Dataset.");
+  } else {
+    const all=NAT.rivers.filter(r=>P.n&&r.properties.n===P.n); const same=all.length?all:[d];
+    const miles=d3.sum(same,f=>d3.geoLength(f))*6371.0088*0.621371; const CC=[...new Set(same.flatMap(countiesTouched))].sort((a,b)=>CN[a].localeCompare(CN[b]));
+    const ord=d3.max(same,f=>f.properties.o)||P.o;
+    det().innerHTML=hero(waterKind(P.n),"Water",P.n||"Unnamed stream",P.n?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(P.n+" Arkansas"),"Search Wikipedia")}</div>`:"","")+
+      stat((miles<10?miles.toFixed(1):fmt(Math.round(miles)))+" mi","mapped in Arkansas","accent")+stat(ord,"stream order")+
+      rows("",row(CC.length===1?"County":"Counties",CC.map(c=>cLink(c)).join(", ")))+
+      tile("span2 note","Stream order measures size: two order-1 streams join to make an order-2 stream, and so on. Arkansas's biggest rivers reach order 8 or more. Only streams of order 3 and up are mapped.");
+  }
+  wire();}
+
+/* terrain shading (hillshade tiles placed in map coordinates so they sit under places and roads) */
+const SHADE=(x,y,z)=>`https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/${z}/${y}/${x}`;
+function renderShade(layer,projection,T){ if(mapEl.classList.contains("hide-Terrain")){layer.selectAll("image").remove();return;}
+  const all=tilesFor(projection,T), [tx,ty]=all.translate, k=all.scale, tiles=all.filter(([,,z])=>z<=15);
+  layer.selectAll("image").data(tiles,d=>d.join("/")).join("image").attr("href",([x,y,z])=>SHADE(x,y,z))
+    .attr("x",([x])=>((x+tx)*k-T.x)/T.k).attr("y",([,y])=>((y+ty)*k-T.y)/T.k).attr("width",(k+1)/T.k).attr("height",(k+1)/T.k).attr("preserveAspectRatio","none");}
+/* FEMA flood hazard zones (National Flood Hazard Layer), fetched as an image for the current county view */
+let floodTimer=null;
+function renderFlood(){ const layer=cg.select("g.c-flood"); if(layer.empty()) return; layer.selectAll("*").remove();
+  if(!openCF||mapEl.classList.contains("hide-Flood")) return;
+  const T=d3.zoomTransform(csvg.node()), R=6378137, m=([lon,lat])=>[R*lon*Math.PI/180, R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))];
+  const tl=cproj.invert(T.invert([0,0])), br=cproj.invert(T.invert([W,H])); const a=m(tl), b=m(br);
+  const url=`https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/export?bbox=${a[0]},${b[1]},${b[0]},${a[1]}&bboxSR=3857&imageSR=3857&size=${Math.round(W)},${Math.round(H)}&format=png32&transparent=true&layers=show:28&f=image`;
+  const p0=T.invert([0,0]), p1=T.invert([W,H]);
+  layer.append("image").attr("href",url).attr("x",p0[0]).attr("y",p0[1]).attr("width",p1[0]-p0[0]).attr("height",p1[1]-p0[1]).attr("preserveAspectRatio","none").attr("opacity",.7);}
+
 function placeParks(sel,projection,k){sel.attr("transform",d=>{const [x,y]=projection(d.ll);return `translate(${x},${y}) scale(${1/k})`;});}
 const lSel = gL.selectAll("text").data(counties).join("text").attr("class","label").text(d=>d.properties.n);
 
@@ -537,7 +650,7 @@ function showTip(e,html){const r=mapEl.getBoundingClientRect();tip.html(html).st
   tip.style("left",x+"px").style("top",y+"px");}
 function hideTip(){tip.style("opacity",0);}
 
-const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",e=>{svg.classed("moving",false);sizeHist(e.transform.k);}).on("zoom",e=>{g.attr("transform",e.transform); sClip.attr("transform",e.transform); placeParks(pkSel,proj,e.transform.k); renderTiles(gTiles,proj,e.transform);
+const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",true)).on("end",e=>{svg.classed("moving",false);sizeHist(e.transform.k);}).on("zoom",e=>{g.attr("transform",e.transform); sClip.attr("transform",e.transform); renderShade(gShade,proj,e.transform); placeParks(pkSel,proj,e.transform.k); renderTiles(gTiles,proj,e.transform);
   const s=Math.sqrt(e.transform.k); lSel.style("font-size",(11/s)+"px").style("stroke-width",(2.5/s)+"px");});
 svg.call(zoom).on("click",()=>{pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();});
 
@@ -580,7 +693,7 @@ const csvg = d3.select("#csvg"), cdefs = csvg.append("defs"), cgTiles = csvg.app
 const cproj = d3.geoMercator();
 const cpath = d3.geoPath(cproj);
 let openCF=null, cK=1, ctSel=d3.select(null), cpSel=d3.select(null), cpkSel=d3.select(null), cpkASel=d3.select(null), chpSel=d3.select(null);
-const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>csvg.classed("moving",false)).on("zoom",e=>{cg.attr("transform",e.transform); d3.select("#ctclip path").attr("transform",e.transform); renderTiles(cgTiles,cproj,e.transform); cK=e.transform.k; sizeCountyLabels();});
+const czoom = d3.zoom().scaleExtent([1,30]).on("start",()=>csvg.classed("moving",true)).on("end",()=>{csvg.classed("moving",false); clearTimeout(floodTimer); floodTimer=setTimeout(renderFlood,150);}).on("zoom",e=>{cg.attr("transform",e.transform); renderShade(cg.select("g.shade"),cproj,e.transform); d3.select("#ctclip path").attr("transform",e.transform); renderTiles(cgTiles,cproj,e.transform); cK=e.transform.k; sizeCountyLabels();});
 csvg.call(czoom).on("click",()=>{ if(openCF) selectCounty(countyBy[openCF]); });
 const countyHooks=[]; // per-county layers plug in here: countyHooks.push((cf, ctx)=>{...})
 
@@ -592,6 +705,9 @@ function renderCounty(cf){
   cdefs.append("clipPath").attr("id","ctclip").append("path").attr("d",cpath(C));
   cg.append("path").datum(C).attr("class","c-base").attr("d",cpath)
     .on("mousemove",(e,d)=>showTip(e,`<b>${d.properties.n} County</b><br><span class=k>Unincorporated area — governed by the county</span>`)).on("mouseleave",hideTip);
+  cg.append("g").attr("class","shade").attr("clip-path","url(#cclip)");
+  cg.append("g").attr("class","c-flood").attr("clip-path","url(#cclip)");
+  cg.append("g").attr("class","c-nature").attr("clip-path","url(#cclip)");
   const gTw=cg.append("g").attr("clip-path","url(#cclip)");
   ctSel=gTw.selectAll("path").data(twpsByC[cf]).join("path").attr("class","twp").attr("d",cpath)
     .on("mousemove",(e,d)=>showTip(e,twpTip(d))).on("mouseleave",hideTip)
@@ -634,7 +750,7 @@ function renderCounty(cf){
   gLab.selectAll("text.pl").data(own).join("text").attr("class",d=>"pl "+d.properties.t+(d.properties.sc?" seat":""))
     .attr("x",d=>cproj(d.properties.ip)[0]).attr("y",d=>cproj(d.properties.ip)[1]).text(d=>d.properties.n);
   csvg.call(czoom.transform,d3.zoomIdentity); renderTiles(cgTiles,cproj,d3.zoomIdentity); sizeCountyLabels();
-  drawCountyRoads(cf);
+  drawCountyRoads(cf); drawCountyNature(cf); renderShade(cg.select("g.shade"),cproj,d3.zoomIdentity); renderFlood();
   countyHooks.forEach(h=>h(cf,{g:hooksLayer,proj:cproj,path:cpath,county:C}));
   drawInset();
 }
@@ -806,7 +922,9 @@ function selectPlace(d,zoomIt){const P=d.properties;if(P.cf&&!(openCF&&d.propert
 
 const defaultDetail=det().innerHTML; function resetDetail(){det().innerHTML=defaultDetail;}
 
-document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>mapEl.classList.toggle("hide-"+cb.dataset.layer,!cb.checked));
+document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>{mapEl.classList.toggle("hide-"+cb.dataset.layer,!cb.checked);
+  if(cb.dataset.layer==="Terrain"){renderShade(gShade,proj,d3.zoomTransform(svg.node())); if(openCF) renderShade(cg.select("g.shade"),cproj,d3.zoomTransform(csvg.node()));}
+  if(cb.dataset.layer==="Flood") renderFlood();});
 document.getElementById("labels").onchange=e=>mapEl.classList.toggle("hide-labels",!e.target.checked);
 const activeZoom=()=>openCF?[csvg,czoom]:[svg,zoom];
 document.getElementById("zin").onclick=()=>{const [s,z]=activeZoom();s.transition().call(z.scaleBy,1.6);};

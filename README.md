@@ -24,6 +24,7 @@ Visit https://steelman1474.github.io/arkansas-map/. Opening `index.html` directl
 | `data/processed/nrhp_wikidata.tsv` | National Register of Historic Places listings with coordinates (from Wikidata) |
 | `data/web/highways.topo.json` | Interstates, U.S. and state highways (Census TIGER/Line 2024), loaded by the page |
 | `data/web/roads/05xxx.json` | Every road in a county with who maintains it, surface, address range and ArDOT district (Arkansas Centerline File), loaded when a county is opened (rebuild with `build/acf_roads.py`) |
+| `data/web/nature.topo.json` | Rivers, lakes, national forests, parks, refuges, wildlife management areas and other public land (rebuild with `build/nature.py`) |
 | `data/processed/links.json` | Wikipedia titles and official websites (from Wikidata) |
 
 Counties and the state outline are built from the townships, so their lines match exactly.
@@ -43,4 +44,10 @@ Requires Node.js (https://nodejs.org).
 - Park outlines: © OpenStreetMap contributors (ODbL), via Nominatim; simplified
 - Historic places: National Register of Historic Places entries on Wikidata (reference number, coordinates)
 - State parks: Wikipedia "List of Arkansas state parks" table and Wikidata
+- Rivers and streams (order 3+): ADEQ stream network via the Arkansas GIS Office
+- Lakes: USGS National Hydrography Dataset via the Arkansas GIS Office
+- Forests, national parks, refuges, wilderness, natural areas, military land and local parks: ArDOT Public Lands layer
+- Wildlife management areas: Arkansas Game and Fish Commission via the Arkansas GIS Office
+- Terrain shading: Esri World Hillshade, loaded live
+- Flood zones: FEMA National Flood Hazard Layer, loaded live on county maps
 - Quorum court size: Arkansas Code § 14-14-402 population ranges
