@@ -45,7 +45,7 @@ Requires Node.js (https://nodejs.org).
 - Historic places: National Register of Historic Places entries on Wikidata (reference number, coordinates)
 - State parks: Wikipedia "List of Arkansas state parks" table and Wikidata
 - Rivers and streams (order 3+): ADEQ stream network via the Arkansas GIS Office
-- Lakes: USGS National Hydrography Dataset via the Arkansas GIS Office
+- Lakes (about 5 acres and up): USGS National Hydrography Dataset, high resolution, via the Arkansas GIS Office
 - Forests, national parks, refuges, wilderness, natural areas, military land and local parks: ArDOT Public Lands layer
 - Wildlife management areas: Arkansas Game and Fish Commission via the Arkansas GIS Office
 - Terrain shading: Esri World Hillshade, loaded live
