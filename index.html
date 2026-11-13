@@ -553,11 +553,29 @@ const LANDKIND={nf:"National forest",np:"National park site",nwr:"National wildl
 const LANDWHO={nf:"U.S. Forest Service",np:"National Park Service",nwr:"U.S. Fish and Wildlife Service",wild:"Federal agency managing the surrounding land (usually the U.S. Forest Service or National Park Service)",
   na:"Arkansas Natural Heritage Commission (most natural areas)",mil:"U.S. military or Arkansas National Guard",lp:"The city or county",oth:"A public agency",wma:"Arkansas Game and Fish Commission"};
 const landLayer=k=>({nf:"NF",np:"NPW",nwr:"NPW",wild:"WN",na:"WN",lp:"LP",mil:"MIL",oth:"LP",wma:"WMA"})[k];
-let NAT=null;
-fetch("data/web/nature.topo.json?v=3").then(r=>r.json()).then(tj=>{
+let NAT=null, NLINK={};
+fetch("data/web/nature_links.json?v=2").then(r=>r.json()).then(j=>NLINK=j).catch(()=>{});
+/* Wikipedia article and official website when one is known; otherwise a Wikipedia search */
+function natLinks(key,name,fs){let L=NLINK[key];
+  if(L&&L.c&&fs){const near=fs.some(f=>{const [[x0,y0],[x1,y1]]=f._b||(f._b=d3.geoBounds(f)), p=.12; return L.c[0]>x0-p&&L.c[0]<x1+p&&L.c[1]>y0-p&&L.c[1]<y1+p;}); if(!near) L=null;}
+  if(L) return `<div class="links">${ext(wpURL(L.w),"Wikipedia")}${L.s?ext(siteURL(L.s),"Official website"):""}</div>`;
+  return name?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(name+" Arkansas"),"Search Wikipedia")}</div>`:"";}
+fetch("data/web/nature.topo.json?v=4").then(r=>r.json()).then(tj=>{
   const F=k=>topojson.feature(tj,tj.objects[k]).features.filter(f=>f.geometry);
   const fix=f=>{ if(d3.geoArea(f)>2*Math.PI){const g=f.geometry; if(g.type==="Polygon") g.coordinates.forEach(r=>r.reverse()); else g.coordinates.forEach(p=>p.forEach(r=>r.reverse()));} return f;};
-  NAT={rivers:F("rivers").flatMap(f=>f.properties.n||f.geometry.type!=="MultiLineString"?[f]:f.geometry.coordinates.map(c=>({type:"Feature",properties:f.properties,geometry:{type:"LineString",coordinates:c}}))), lakes:F("lakes").map(fix), lands:F("lands").map(fix), wma:F("wma").map(fix)};
+  /* split each named river into connected stretches, so two different "Hurricane Creek"s are separate rivers */
+  const riv=[]; F("rivers").forEach(f=>{const P=f.properties, parts=f.geometry.type==="MultiLineString"?f.geometry.coordinates:[f.geometry.coordinates];
+    parts.forEach(c=>riv.push({type:"Feature",properties:{...P},geometry:{type:"LineString",coordinates:c}}));});
+  const byName=d3.group(riv.filter(f=>f.properties.n),f=>f.properties.n); let gid=0;
+  byName.forEach(fs=>{const par=fs.map((_,i)=>i), find=i=>par[i]===i?i:(par[i]=find(par[i])), ends=new Map();
+    /* join stretches when an end comes near another stretch of the same name. Rivers break where they pass through
+       reservoirs, so rivers and bayous get a wide gap (~25 km); creeks only ~2 km so same-named creeks stay separate */
+    const S=/River|Bayou/.test(fs[0].properties.n)?0.25:0.02, cell=(x,y)=>x+","+y, grid=new Map();
+    fs.forEach((f,i)=>f.geometry.coordinates.forEach(p=>{const k=cell(Math.floor(p[0]/S),Math.floor(p[1]/S)); if(!grid.has(k)) grid.set(k,[]); grid.get(k).push([i,p]);}));
+    fs.forEach((f,i)=>{const c=f.geometry.coordinates; [c[0],c[c.length-1]].forEach(p=>{const cx=Math.floor(p[0]/S), cy=Math.floor(p[1]/S);
+      for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) (grid.get(cell(cx+dx,cy+dy))||[]).forEach(([j,q])=>{if(j!==i&&Math.hypot(q[0]-p[0],q[1]-p[1])<S) par[find(i)]=find(j);});});});
+    const ids=new Map(); fs.forEach((f,i)=>{const r=find(i); if(!ids.has(r)) ids.set(r,gid++); f.properties.g=ids.get(r);});});
+  NAT={rivers:riv, lakes:F("lakes").map(fix), lands:F("lands").map(fix), wma:F("wma").map(fix)};
   NAT.wma.forEach(f=>f.properties.t="wma");
   /* the source layer tags a stray parcel in Ashley County as Ouachita National Forest; the forest is entirely in west-central Arkansas */
   NAT.lands.forEach(f=>{if(f.properties.n==="Ouachita National Forest"&&f.geometry.type==="MultiPolygon") f.geometry.coordinates=f.geometry.coordinates.filter(p=>p[0][0][1]>34);});
@@ -592,22 +610,22 @@ function clearSel(){ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.c
 function selectLand(d,cf){const P=d.properties; clearSel(); cg.selectAll(".c-nature .land").classed("sel",x=>x===d);
   const C=countiesTouched(d), acres=P.ac>0?P.ac:d3.geoArea(d)*6371008.8**2/4046.86;
   const inC=d3.geoArea(d)>0?null:null;
-  det().innerHTML=hero(LANDKIND[P.t],"Land",P.n||LANDKIND[P.t],`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent((P.n||"")+" Arkansas"),"Search Wikipedia")}</div>`,P.ty||LANDKIND[P.t])+
+  det().innerHTML=hero(LANDKIND[P.t],"Land",P.n||LANDKIND[P.t],natLinks((P.t==="wma"?"wma|":"land|")+P.n,P.n),P.ty||LANDKIND[P.t])+
     stat(fmt(Math.round(acres)),"acres","accent")+stat(C.length,C.length===1?"county":"counties")+
     rows("",row("Managed by",LANDWHO[P.t])+row(C.length===1?"County":"Counties",C.map(c=>cLink(c)).join(", ")))+
     tile("span2 note",P.t==="nf"?"National forest land within the boundary can include private inholdings; the outline shows the forest's proclaimed boundary.":P.t==="wma"?"Wildlife management areas are open to the public for hunting, fishing and wildlife viewing under Game and Fish rules.":"Boundaries come from ArDOT's public lands layer and the Arkansas GIS Office; acreage is approximate.");
   wire();}
-function selectWater(d,kind,cf){const P=d.properties; clearSel(); cg.selectAll(kind==="lake"?".c-nature .lake":".c-nature .river:not(.hit)").classed("sel",x=>x===d||(kind==="river"&&P.n&&x.properties.n===P.n));
+function selectWater(d,kind,cf){const P=d.properties; clearSel(); cg.selectAll(kind==="lake"?".c-nature .lake":".c-nature .river:not(.hit)").classed("sel",x=>x===d||(kind==="river"&&P.n&&x.properties.n===P.n&&x.properties.g===P.g));
   const C=countiesTouched(d);
   if(kind==="lake"){
-    det().innerHTML=hero(P.t,"Water",P.n||"Unnamed "+P.t.toLowerCase(),P.n?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(P.n+" Arkansas"),"Search Wikipedia")}</div>`:"",C.map(c=>cLink(c)+" County").join(", "))+
+    det().innerHTML=hero(P.t,"Water",P.n||"Unnamed "+P.t.toLowerCase(),natLinks("lake|"+P.n,P.n,[d]),C.map(c=>cLink(c)+" County").join(", "))+
       stat(fmt(Math.round(P.a*247.1)),"acres of water","accent")+stat(P.a.toFixed(P.a<1?2:1),"square kilometers")+
       tile("span2 note",P.t==="Reservoir"?"A reservoir is a lake made by a dam. Most large lakes in Arkansas are reservoirs built by the U.S. Army Corps of Engineers or utilities.":"Outline from the U.S. Geological Survey's National Hydrography Dataset.");
   } else {
-    const all=NAT.rivers.filter(r=>P.n&&r.properties.n===P.n); const same=all.length?all:[d];
+    const all=NAT.rivers.filter(r=>P.n&&r.properties.n===P.n&&r.properties.g===P.g); const same=all.length?all:[d];
     const miles=d3.sum(same,f=>d3.geoLength(f))*6371.0088*0.621371; const CC=[...new Set(same.flatMap(countiesTouched))].sort((a,b)=>CN[a].localeCompare(CN[b]));
     const ord=d3.max(same,f=>f.properties.o)||P.o;
-    det().innerHTML=hero(waterKind(P.n),"Water",P.n||"Unnamed stream",P.n?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(P.n+" Arkansas"),"Search Wikipedia")}</div>`:"","")+
+    det().innerHTML=hero(waterKind(P.n),"Water",P.n||"Unnamed stream",natLinks("river|"+P.n,P.n,same),"")+
       stat((miles<10?miles.toFixed(1):fmt(Math.round(miles)))+" mi","mapped in Arkansas","accent")+stat(ord,"stream order")+
       rows("",row(CC.length===1?"County":"Counties",CC.map(c=>cLink(c)).join(", ")))+
       tile("span2 note","Stream order measures size: two order-1 streams join to make an order-2 stream, and so on. Arkansas's biggest rivers reach order 8 or more. Only streams of order 3 and up are mapped.");

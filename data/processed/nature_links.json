@@ -1,0 +1,908 @@
+{
+"lake|Beaty Lake": {
+"c": [
+-90.708,
+35.072
+],
+"w": "Beaty Lake (Arkansas)"
+},
+"lake|Beaver Lake": {
+"c": [
+-93.848,
+36.421
+],
+"w": "Beaver Lake (Arkansas)"
+},
+"lake|Blue Mountain Lake": {
+"c": [
+-93.701,
+35.101
+],
+"w": "Blue Mountain Lake (Arkansas)"
+},
+"lake|Broken Bow Lake": {
+"c": [
+-94.689,
+34.18
+],
+"w": "Broken Bow Lake"
+},
+"lake|Bull Shoals Lake": {
+"c": [
+-92.575,
+36.365
+],
+"w": "Bull Shoals Lake"
+},
+"lake|Caddo Lake": {
+"c": [
+-94.01,
+32.71
+],
+"w": "Caddo Lake"
+},
+"lake|Clayton Lake": {
+"c": [
+-95.309,
+34.543
+],
+"w": "Clayton Lake"
+},
+"lake|De Gray Lake": {
+"c": [
+-93.111,
+34.215
+],
+"w": "DeGray Lake"
+},
+"lake|Dierks Lake": {
+"c": [
+-94.098,
+34.165
+],
+"w": "Dierks Lake"
+},
+"lake|Fort Gibson Lake": {
+"c": [
+-95.23,
+35.87
+],
+"w": "Fort Gibson Dam"
+},
+"lake|Gassoway Lake": {
+"c": [
+-91.217,
+32.983
+],
+"w": "Gassoway Lake"
+},
+"lake|Gillham Lake": {
+"c": [
+-94.231,
+34.216
+],
+"w": "Gillham Lake"
+},
+"lake|Grand Lake O' the Cherokees": {
+"c": [
+-94.841,
+36.612
+],
+"s": "http://www.grandlakefun.com/",
+"w": "Grand Lake o' the Cherokees"
+},
+"lake|Greers Ferry Lake": {
+"c": [
+-92.13,
+35.534
+],
+"w": "Greers Ferry Lake"
+},
+"lake|Hugo Lake": {
+"c": [
+-95.416,
+34.068
+],
+"w": "Hugo Lake"
+},
+"lake|Lake Atalanta": {
+"c": [
+-94.099,
+36.338
+],
+"w": "Lake Atalanta"
+},
+"lake|Lake Carl Albert": {
+"c": [
+-95.069,
+34.772
+],
+"w": "Lake Carl Albert"
+},
+"lake|Lake Catherine": {
+"c": [
+-93.089,
+34.432
+],
+"w": "Lake Hamilton and Lake Catherine"
+},
+"lake|Lake Claiborne": {
+"c": [
+-92.92,
+32.723
+],
+"w": "Lake Claiborne"
+},
+"lake|Lake Conway": {
+"c": [
+-92.392,
+35.005
+],
+"w": "Lake Conway"
+},
+"lake|Lake Dardanelle": {
+"c": [
+-93.338,
+35.34
+],
+"w": "Lake Dardanelle"
+},
+"lake|Lake Eucha": {
+"c": [
+-94.858,
+36.342
+],
+"w": "Lake Eucha"
+},
+"lake|Lake Fayetteville": {
+"c": [
+-94.139,
+36.136
+],
+"w": "Lake Fayetteville"
+},
+"lake|Lake Flint Creek": {
+"c": [
+-94.534,
+36.251
+],
+"w": "Lake Flint Creek"
+},
+"lake|Lake Georgia Pacific": {
+"c": [
+-92.034,
+33.234
+],
+"w": "Lake Georgia Pacific"
+},
+"lake|Lake Georgia-Pacific": {
+"c": [
+-92.034,
+33.234
+],
+"w": "Lake Georgia Pacific"
+},
+"lake|Lake Greeson": {
+"c": [
+-93.731,
+34.21
+],
+"w": "Lake Greeson"
+},
+"lake|Lake Hamilton": {
+"c": [
+-93.089,
+34.432
+],
+"w": "Lake Hamilton and Lake Catherine"
+},
+"lake|Lake Maumelle": {
+"c": [
+-92.567,
+34.878
+],
+"w": "Lake Maumelle"
+},
+"lake|Lake Nixon": {
+"c": [
+-92.434,
+34.718
+],
+"w": "Lake Nixon"
+},
+"lake|Lake Ouachita": {
+"c": [
+-93.333,
+34.6
+],
+"w": "Lake Ouachita"
+},
+"lake|Lake Taneycomo": {
+"c": [
+-93.165,
+36.695
+],
+"w": "Lake Taneycomo"
+},
+"lake|Lake Whittington": {
+"c": [
+-91.07,
+33.662
+],
+"w": "Lake Whittington"
+},
+"lake|Lake Winona": {
+"c": [
+-92.824,
+34.867
+],
+"w": "Winona Wildlife Management Area"
+},
+"lake|McNulty Lake": {
+"c": [
+-90.961,
+34.706
+],
+"w": "McNulty Lake"
+},
+"lake|Nimrod Lake": {
+"c": [
+-93.244,
+34.951
+],
+"w": "Nimrod Lake"
+},
+"lake|Norfork Lake": {
+"c": [
+-92.237,
+36.248
+],
+"w": "Norfork Dam"
+},
+"lake|Siloam Springs Lake": {
+"c": [
+-94.539,
+36.225
+],
+"w": "Siloam Springs Lake"
+},
+"lake|Table Rock Lake": {
+"c": [
+-93.3,
+36.567
+],
+"w": "Table Rock Lake"
+},
+"lake|Tenkiller Ferry Lake": {
+"c": [
+-94.992,
+35.658
+],
+"w": "Tenkiller Ferry Lake"
+},
+"lake|Tunica Lake": {
+"c": [
+-90.494,
+34.65
+],
+"w": "Tunica Lake"
+},
+"lake|Wister Lake": {
+"c": [
+-94.733,
+34.937
+],
+"w": "Lake Wister"
+},
+"lake|Wright Patman Lake": {
+"c": [
+-94.16,
+33.305
+],
+"w": "Wright Patman Lake"
+},
+"land|Arkansas National Guard": {
+"c": [
+-92.289,
+34.815
+],
+"s": "https://arkansas.nationalguard.mil/",
+"w": "Arkansas National Guard"
+},
+"land|Bald Knob National Wildlife Refuge": {
+"c": [
+-91.575,
+35.242
+],
+"s": "https://www.fws.gov/baldknob",
+"w": "Bald Knob National Wildlife Refuge"
+},
+"land|Big Lake National Wildlife Refuge": {
+"c": [
+-90.117,
+35.917
+],
+"s": "https://www.fws.gov/biglake",
+"w": "Big Lake National Wildlife Refuge"
+},
+"land|Boyle Park": {
+"c": [
+-92.356,
+34.726
+],
+"w": "Boyle Park"
+},
+"land|Buffalo National River": {
+"c": [
+-92.426,
+36.178
+],
+"s": "https://www.nps.gov/buff/index.htm",
+"w": "Buffalo National River"
+},
+"land|Cache River National Wildlife Refuge": {
+"c": [
+-91.329,
+35.058
+],
+"s": "https://www.fws.gov/cacheriver",
+"w": "Cache River National Wildlife Refuge"
+},
+"land|Cadron Settlement Park": {
+"c": [
+-92.546,
+35.107
+],
+"s": "http://www.conwayparks.com/Default.aspx?tabid=738388",
+"w": "Cadron Settlement Park"
+},
+"land|Camp Pike": {
+"c": [
+-92.284,
+34.824
+],
+"w": "Robinson Maneuver Training Center"
+},
+"land|Central High School National Historic Site": {
+"c": [
+-92.299,
+34.737
+],
+"s": "http://www.lrcentralhigh.net/",
+"w": "Little Rock Central High School"
+},
+"land|East Little Rock": {
+"c": [
+-92.244,
+34.731
+],
+"w": "East Little Rock"
+},
+"land|Felsenthal National Wildlife Refuge": {
+"c": [
+-92.142,
+33.09
+],
+"s": "https://www.fws.gov/refuge/felsenthal",
+"w": "Felsenthal National Wildlife Refuge"
+},
+"land|Fort Smith National Historic Site": {
+"c": [
+-94.43,
+35.388
+],
+"s": "https://www.nps.gov/fosm/index.htm",
+"w": "Fort Smith National Historic Site"
+},
+"land|Fort Southerland Park": {
+"c": [
+-92.818,
+33.574
+],
+"w": "Fort Southerland"
+},
+"land|Holla Bend National Wildlife Refuge": {
+"c": [
+-93.058,
+35.142
+],
+"s": "https://www.fws.gov/hollabend",
+"w": "Holla Bend National Wildlife Refuge"
+},
+"land|Hot Springs National Park": {
+"c": [
+-93.054,
+34.514
+],
+"s": "https://nps.gov/hosp",
+"w": "Hot Springs National Park"
+},
+"land|Lake Willastein Park": {
+"c": [
+-92.412,
+34.852
+],
+"w": "Lake Willastein Park"
+},
+"land|Lamar Porter Field": {
+"c": [
+-92.308,
+34.746
+],
+"w": "Lamar Porter Athletic Field"
+},
+"land|Logan Cave National Wildlife Refuge": {
+"c": [
+-94.395,
+36.198
+],
+"s": "https://www.fws.gov/hollabend/logancave",
+"w": "Logan Cave National Wildlife Refuge"
+},
+"land|National Center for Toxicological Research": {
+"c": [
+-92.112,
+34.367
+],
+"s": "https://www.fda.gov/AboutFDA/CentersOffices/OC/OfficeofScientificandMedicalPrograms/NCTR/",
+"w": "National Center for Toxicological Research"
+},
+"land|Ouachita National Forest": {
+"c": [
+-94.25,
+34.5
+],
+"s": "https://www.fs.usda.gov/ouachita/",
+"w": "Ouachita National Forest"
+},
+"land|Overflow National Wildlife Refuge": {
+"c": [
+-91.675,
+33.067
+],
+"s": "https://www.fws.gov/refuge/overflow",
+"w": "Overflow National Wildlife Refuge"
+},
+"land|Ozark National Forest": {
+"c": [
+-94.476,
+35.275
+],
+"s": "http://www.fs.usda.gov/osfnf",
+"w": "Ozark–St. Francis National Forest"
+},
+"land|Pea Ridge National Military Park": {
+"c": [
+-94.035,
+36.454
+],
+"s": "https://www.nps.gov/peri/index.htm",
+"w": "Pea Ridge National Military Park"
+},
+"land|Pine Bluff Arsenal": {
+"c": [
+-92.087,
+34.333
+],
+"s": "https://www.pba.army.mil/",
+"w": "Pine Bluff Arsenal"
+},
+"land|Pond Creek National Wildlife Refuge": {
+"c": [
+-94.25,
+33.85
+],
+"s": "https://www.fws.gov/refuge/pond_creek",
+"w": "Pond Creek National Wildlife Refuge"
+},
+"land|Wapanocca National Wildlife Refuge": {
+"c": [
+-90.217,
+35.346
+],
+"s": "https://www.fws.gov/refuge/wapanocca",
+"w": "Wapanocca National Wildlife Refuge"
+},
+"land|War Memorial Stadium": {
+"c": [
+-92.33,
+34.75
+],
+"s": "http://www.wmstadium.com/",
+"w": "War Memorial Stadium (Arkansas)"
+},
+"land|White River National Wildlife Refuge": {
+"c": [
+-91.1,
+34.35
+],
+"s": "https://www.fws.gov/refuge/white_river",
+"w": "White River National Wildlife Refuge"
+},
+"river|Antoine River": {
+"c": [
+-93.367,
+33.951
+],
+"w": "Antoine River (Arkansas)"
+},
+"river|Arkansas River": {
+"c": [
+-91.108,
+33.775
+],
+"w": "Arkansas River"
+},
+"river|Bayou Bartholomew": {
+"c": [
+-92.064,
+32.723
+],
+"w": "Bayou Bartholomew"
+},
+"river|Beaty Creek": {
+"c": [
+-94.784,
+36.35
+],
+"w": "Beaty Creek"
+},
+"river|Bennetts River": {
+"c": [
+-92.198,
+36.429
+],
+"w": "Bennetts River"
+},
+"river|Big Piney Creek": {
+"c": [
+-93.329,
+35.343
+],
+"w": "Big Piney Creek"
+},
+"river|Big Sugar Creek": {
+"c": [
+-94.382,
+36.588
+],
+"w": "Big Sugar Creek"
+},
+"river|Black River": {
+"c": [
+-91.322,
+35.64
+],
+"w": "Black River (Arkansas–Missouri)"
+},
+"river|Brodie Creek": {
+"c": [
+-92.408,
+34.711
+],
+"w": "Brodie Creek"
+},
+"river|Buffalo River": {
+"c": [
+-92.426,
+36.178
+],
+"s": "https://www.nps.gov/buff/index.htm",
+"w": "Buffalo National River"
+},
+"river|Cache River": {
+"c": [
+-91.325,
+34.702
+],
+"w": "Cache River (Arkansas)"
+},
+"river|Caddo River": {
+"c": [
+-93.043,
+34.18
+],
+"w": "Caddo River"
+},
+"river|Cadron Creek": {
+"c": [
+-92.554,
+35.115
+],
+"w": "Cadron Creek"
+},
+"river|Cossatot River": {
+"c": [
+-94.154,
+33.791
+],
+"w": "Cossatot River"
+},
+"river|Crooked Creek": {
+"c": [
+-92.477,
+36.227
+],
+"w": "Crooked Creek (Arkansas)"
+},
+"river|Days Creek": {
+"c": [
+-93.967,
+33.235
+],
+"w": "Days Creek (Arkansas)"
+},
+"river|Diles Creek": {
+"c": [
+-91.181,
+36.453
+],
+"w": "Diles Creek"
+},
+"river|Dirty Creek": {
+"c": [
+-93.636,
+35.484
+],
+"w": "Dirty Creek (Arkansas)"
+},
+"river|Drakes Creek": {
+"c": [
+-93.882,
+36.013
+],
+"w": "Drakes Creek (Arkansas)"
+},
+"river|Eleven Point River": {
+"c": [
+-91.082,
+36.151
+],
+"w": "Eleven Point River"
+},
+"river|Fourche Creek": {
+"c": [
+-92.188,
+34.727
+],
+"w": "Fourche Creek (Arkansas)"
+},
+"river|Fourche River": {
+"c": [
+-90.95,
+36.267
+],
+"w": "Fourche River"
+},
+"river|Glazypeau Creek": {
+"c": [
+-93.183,
+34.547
+],
+"w": "Glazypeau Creek"
+},
+"river|Hatchie River": {
+"c": [
+-89.894,
+35.551
+],
+"w": "Hatchie River"
+},
+"river|Hurricane Creek": {
+"c": [
+-93.245,
+35.698
+],
+"w": "Hurricane Creek (Arkansas)"
+},
+"river|Illinois River": {
+"c": [
+-95.098,
+35.489
+],
+"w": "Illinois River (Arkansas–Oklahoma)"
+},
+"river|James Fork": {
+"c": [
+-94.645,
+35.163
+],
+"w": "James Fork"
+},
+"river|Keels Creek": {
+"c": [
+-93.659,
+36.37
+],
+"w": "Keels Creek"
+},
+"river|Kings River": {
+"c": [
+-93.578,
+36.491
+],
+"w": "Kings River (Arkansas)"
+},
+"river|L'Eau Frais Creek": {
+"c": [
+-92.871,
+34.152
+],
+"w": "L'Eau Frais Creek"
+},
+"river|Lee Creek": {
+"c": [
+-94.383,
+35.45
+],
+"w": "Lee Creek (Arkansas)"
+},
+"river|Little Missouri River": {
+"c": [
+-92.9,
+33.808
+],
+"w": "Little Missouri River (Arkansas)"
+},
+"river|Little Red River": {
+"c": [
+-91.437,
+35.182
+],
+"w": "Little Red River (Arkansas)"
+},
+"river|Little Sugar Creek": {
+"c": [
+-94.383,
+36.588
+],
+"w": "Little Sugar Creek"
+},
+"river|Loosahatchie River": {
+"c": [
+-89.177,
+35.204
+],
+"w": "Loosahatchie River"
+},
+"river|Mulberry River": {
+"c": [
+-93.45,
+35.746
+],
+"w": "Mulberry River (Arkansas)"
+},
+"river|Myatt Creek": {
+"c": [
+-91.524,
+36.371
+],
+"w": "Myatt Creek"
+},
+"river|North Sylamore Creek": {
+"c": [
+-92.12,
+35.941
+],
+"w": "North Sylamore Creek"
+},
+"river|Obion River": {
+"c": [
+-89.639,
+35.907
+],
+"w": "Obion River"
+},
+"river|Osage Creek": {
+"c": [
+-94.404,
+36.178
+],
+"w": "Osage Creek"
+},
+"river|Petit Jean River": {
+"c": [
+-92.907,
+35.169
+],
+"w": "Petit Jean River"
+},
+"river|Poteau River": {
+"c": [
+-94.434,
+35.388
+],
+"w": "Poteau River"
+},
+"river|Rolling Fork": {
+"c": [
+-94.397,
+33.941
+],
+"w": "Rolling Fork (Arkansas)"
+},
+"river|Saint Francis River": {
+"c": [
+-90.592,
+34.624
+],
+"w": "St. Francis River"
+},
+"river|South Fork Spring River": {
+"c": [
+-91.495,
+36.318
+],
+"w": "South Fork Spring River"
+},
+"river|Spring River": {
+"c": [
+-91.074,
+36.115
+],
+"w": "Spring River (Arkansas)"
+},
+"river|Strawberry River": {
+"c": [
+-91.219,
+35.883
+],
+"w": "Strawberry River (Arkansas)"
+},
+"river|Sulphur River": {
+"c": [
+-93.862,
+33.093
+],
+"w": "Sulphur River"
+},
+"river|Tanyard Creek": {
+"c": [
+-94.252,
+36.478
+],
+"w": "Tanyard Creek (Arkansas)"
+},
+"river|War Eagle Creek": {
+"c": [
+-93.998,
+36.23
+],
+"w": "War Eagle Creek"
+},
+"river|Wharton Creek": {
+"c": [
+-93.682,
+36.069
+],
+"w": "Wharton Creek (Arkansas)"
+},
+"river|White River": {
+"c": [
+-91.081,
+33.951
+],
+"w": "White River (Arkansas–Missouri)"
+},
+"river|Yocum Creek": {
+"c": [
+-93.309,
+36.465
+],
+"w": "Yocum Creek"
+},
+"wma|White Rock WMA": {
+"c": [
+-93.937,
+35.701
+],
+"w": "White Rock Wildlife Management Area"
+},
+"wma|Winona WMA": {
+"c": [
+-92.824,
+34.867
+],
+"w": "Winona Wildlife Management Area"
+}
+}

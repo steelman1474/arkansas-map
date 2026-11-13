@@ -25,6 +25,7 @@ Visit https://steelman1474.github.io/arkansas-map/. Opening `index.html` directl
 | `data/web/highways.topo.json` | Interstates, U.S. and state highways (Census TIGER/Line 2024), loaded by the page |
 | `data/web/roads/05xxx.json` | Every road in a county with who maintains it, surface, address range and ArDOT district (Arkansas Centerline File), loaded when a county is opened (rebuild with `build/acf_roads.py`) |
 | `data/web/nature.topo.json` | Rivers, lakes, national forests, parks, refuges, wildlife management areas and other public land (rebuild with `build/nature.py`) |
+| `data/processed/nature_links.json` | Wikipedia articles and official websites for rivers, lakes and public lands (matched by name, checked against the article's location) |
 | `data/processed/links.json` | Wikipedia titles and official websites (from Wikidata) |
 
 Counties and the state outline are built from the townships, so their lines match exactly.
