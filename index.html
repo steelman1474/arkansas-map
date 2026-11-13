@@ -662,7 +662,7 @@ function renderShade(layer,projection,T){ if(mapEl.classList.contains("hide-Terr
    zones (the 100-year floodplain: zones A, AE, AO, AH, VE), drawn as a picture for the current view */
 let floodTimer=null;
 const FLOOD_DL=encodeURIComponent(JSON.stringify([{id:21,source:{type:"mapLayer",mapLayerId:21},definitionExpression:"sfha_tf='T'",
-  drawingInfo:{renderer:{type:"simple",symbol:{type:"esriSFS",style:"esriSFSSolid",color:[59,125,216,150],outline:{type:"esriSLS",style:"esriSLSSolid",color:[30,80,160,200],width:0.4}}}}}]));
+  drawingInfo:{renderer:{type:"simple",symbol:{type:"esriSFS",style:"esriSFSBackwardDiagonal",color:[20,50,120,230],outline:{type:"esriSLS",style:"esriSLSSolid",color:[20,50,120,230],width:0.6}}}}}]));
 function floodImage(layer,projection,T){ layer.selectAll("*").remove(); if(mapEl.classList.contains("hide-Flood")) return;
   const R=6378137, m=([lon,lat])=>[R*lon*Math.PI/180, R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))];
   const a=m(projection.invert(T.invert([0,0]))), b=m(projection.invert(T.invert([W,H])));
