@@ -11,15 +11,15 @@
     --ink:#1c2a35; --ink-2:#2b3d4b; --paper:#f6f7f5; --ground:#e2e6e9; --line:#d3d9dd; --muted:#5d6b76;
     --county:#9ec3e6; --county-hi:#6fa6db; --county-line:#3a5a78; --flag:#b5202e;
     --city:#d44a3c; --town:#1fb3b3; --cdp:#d99023; --sel:#ffd84a; --twp:#a9cdee;
-    --panel:#ffffff;
+    --panel:#ffffff; --bg:#dfe4e8; --tile:#ffffff; --r:16px;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;font-family:"Public Sans",system-ui,sans-serif;color:var(--ink);background:var(--paper);font-variant-numeric:tabular-nums}
+  html,body{margin:0;height:100%;font-family:"Public Sans",system-ui,sans-serif;color:var(--ink);background:var(--bg);font-variant-numeric:tabular-nums}
   button,input{font:inherit}
   :focus-visible{outline:2px solid var(--flag);outline-offset:2px}
-  .app{position:fixed;inset:0;display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:54px minmax(0,1fr)}
+  .app{position:fixed;inset:0;display:grid;grid-template-columns:minmax(0,1fr) 400px;grid-template-rows:56px minmax(0,1fr);gap:10px;padding:10px}
   /* header: diamond mark, breadcrumb, search */
-  .bar{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:0 16px 0 14px;background:var(--ink);color:#fff;z-index:10}
+  .bar{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:0 12px 0 16px;background:var(--ink);color:#fff;z-index:10;border-radius:var(--r)}
   .crumbs{display:flex;align-items:center;gap:8px;min-width:0;font-size:17px;white-space:nowrap}
   .crumbs button{background:none;border:none;color:#fff;padding:4px 2px;cursor:pointer;display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.01em}
   .crumbs button:hover{text-decoration:underline;text-underline-offset:3px}
@@ -30,7 +30,7 @@
   .crumbs .hint{color:#9fb1bf;font-size:14px;font-weight:400}
   .app.cv .crumbs .hint{display:none}
   .search{margin-left:auto;position:relative;width:340px;max-width:44vw}
-  .search input{width:100%;height:34px;padding:0 12px 0 34px;border:1px solid #3d5466;border-radius:6px;background:#26384a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239fb1bf' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 4 4'/%3E%3C/svg%3E") 11px 50%/14px no-repeat;color:#fff;font-size:15px}
+  .search input{width:100%;height:36px;border-radius:10px;padding:0 12px 0 34px;border:1px solid #3d5466;border-radius:6px;background:#26384a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239fb1bf' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 4 4'/%3E%3C/svg%3E") 11px 50%/14px no-repeat;color:#fff;font-size:15px}
   .search input::placeholder{color:#9fb1bf}
   .search input:focus{background-color:#fff;color:var(--ink);border-color:#fff;outline:none}
   #results{position:absolute;top:40px;left:0;right:0;list-style:none;margin:0;padding:4px;background:#fff;border-radius:6px;box-shadow:0 8px 28px rgba(16,30,42,.28);max-height:60vh;overflow-y:auto;color:var(--ink)}
@@ -39,7 +39,7 @@
   #results li:hover{background:#eef2f5}
   #results li .badge{margin-left:auto}
   #results .k{color:var(--muted);font-size:13px}
-  #map{position:relative;overflow:hidden;background:var(--ground)}
+  #map{position:relative;overflow:hidden;background:#eef1f3;border-radius:var(--r)}
   svg{width:100%;height:100%;display:block;cursor:grab}
   svg:active{cursor:grabbing}
   .county{fill:var(--county);stroke:var(--county-line);stroke-width:.8px;vector-effect:non-scaling-stroke;transition:fill .12s}
@@ -116,7 +116,7 @@
   .c-outline{fill:none;stroke:#0d1f33;stroke-width:2.6px;vector-effect:non-scaling-stroke;pointer-events:none}
   .back{position:absolute;left:14px;top:14px;z-index:4;border:none;border-radius:4px;background:#1d3550;color:#fff;font:inherit;font-size:16px;font-weight:600;padding:7px 14px;cursor:pointer}
   .back:hover{background:#2f5683}
-  #insetwrap{position:absolute;right:14px;bottom:22px;width:150px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:6px 6px 3px 2px;cursor:pointer;z-index:3}
+  #insetwrap{position:absolute;right:12px;bottom:22px;width:150px;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:6px 6px 3px 2px;cursor:pointer;z-index:3}
   #insetwrap svg{width:100%;height:auto;display:block}
   #insetwrap span{display:block;text-align:center;font-size:12px;color:var(--muted)}
   #insetwrap:hover{box-shadow:0 0 0 2px var(--ink)}
@@ -134,11 +134,11 @@
   #tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;padding:8px 11px;border-radius:6px;font-size:13.5px;line-height:1.4;max-width:270px;opacity:0;transition:opacity .08s;z-index:6;box-shadow:0 4px 14px rgba(16,30,42,.25)}
   #tip b{font-size:15px} #tip .k{color:#a9bac7}
   /* floating map controls */
-  .mapbtns{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(16,30,42,.25);overflow:hidden;z-index:4}
+  .mapbtns{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(16,30,42,.25);overflow:hidden;z-index:4}
   .mapbtns button{width:36px;height:36px;border:none;background:#fff;font-size:19px;cursor:pointer;color:var(--ink)}
   .mapbtns button+button{border-top:1px solid var(--line)}
   .mapbtns button:hover{background:#eef2f5}
-  .layers{position:absolute;left:14px;top:14px;width:262px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(16,30,42,.25);z-index:4;font-size:14px}
+  .layers{position:absolute;left:12px;top:12px;width:262px;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(16,30,42,.25);z-index:4;font-size:14px}
   .layers>button{width:100%;display:flex;align-items:center;gap:8px;border:none;background:none;padding:9px 12px;font-weight:700;font-size:14.5px;cursor:pointer;color:var(--ink)}
   .layers>button::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .15s}
   .layers.closed>button::after{transform:rotate(-45deg)}
@@ -150,59 +150,71 @@
   .sw{width:14px;height:14px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.25)}
   .lbody .cnt{margin-left:auto;color:var(--muted);font-size:12.5px}
   .lbody hr{border:none;border-top:1px solid var(--line);margin:5px 4px}
-  .bm{position:absolute;left:14px;bottom:16px;display:flex;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:3px;z-index:4}
+  .bm{position:absolute;left:12px;bottom:12px;display:flex;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:3px;z-index:4}
   .bm label{position:relative;cursor:pointer}
   .bm input{position:absolute;opacity:0;pointer-events:none}
-  .bm span{display:block;padding:6px 12px;border-radius:4px;font-size:13.5px;font-weight:600;color:var(--muted)}
+  .bm span{display:block;padding:6px 13px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted)}
   .bm input:checked+span{background:var(--ink);color:#fff}
   .bm input:focus-visible+span{outline:2px solid var(--flag);outline-offset:1px}
-  #attrib{position:absolute;right:0;bottom:0;font-size:10.5px;color:#333;background:rgba(255,255,255,.8);padding:1px 6px;border-top-left-radius:4px;z-index:3}
+  #attrib{position:absolute;right:0;bottom:0;border-bottom-right-radius:var(--r);font-size:10.5px;color:#333;background:rgba(255,255,255,.8);padding:1px 6px;border-top-left-radius:4px;z-index:3}
   #attrib:empty{display:none} #attrib a{color:#333}
-  /* sidebar */
-  aside{background:var(--paper);border-left:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column}
-  #detail{padding:20px 22px 8px;font-size:14.5px;line-height:1.45}
-  #detail h3{margin:0 0 6px;font-size:23px;line-height:1.2;font-weight:800;letter-spacing:-.01em}
-  #detail h3 .badge{font-size:11.5px;vertical-align:4px}
-  #detail .kind{color:var(--muted);font-size:14px;margin:-2px 0 10px}
-  #detail .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:6px 0}
+  /* sidebar: bento tiles */
+  aside{overflow-y:auto;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;min-height:0}
+  #detail{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:14.5px;line-height:1.45}
+  .tile{background:var(--tile);border-radius:var(--r);padding:14px 16px;min-width:0}
+  .span2{grid-column:1/-1}
+  .tile h4{margin:0 0 6px;font-size:13.5px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .tile h4 .cnt{margin-left:auto;font-weight:600;color:var(--ink)}
+  .hero{padding:16px 18px}
+  .hero h3{margin:6px 0 2px;font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-.015em}
+  .hero .sub{margin:0;color:var(--muted)}
+  .hero .badge{margin:0}
+  .stat{display:flex;flex-direction:column;justify-content:flex-end;min-height:88px}
+  .stat b{font-size:27px;line-height:1.1;font-weight:800;letter-spacing:-.02em}
+  .stat span{font-size:13px;color:var(--muted);margin-top:3px}
+  .stat.accent{background:var(--ink);color:#fff} .stat.accent span{color:#a9bac7}
+  .note{font-size:13px;color:var(--muted);line-height:1.5;background:#f2f4f5}
+  #detail .row{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:7px 0}
+  #detail .tile h4+.row{border-top:none}
+  #detail .tile>.row:first-child{border-top:none}
   #detail .row span{color:var(--muted)} #detail .row b{font-weight:600;text-align:right}
-  #detail .links{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
-  #detail a.ext{display:inline-block;border:1px solid var(--county-line);color:var(--county-line);text-decoration:none;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px}
-  #detail a.ext:hover{background:var(--county-line);color:#fff}
-  #detail .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:10px 0 14px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
-  #detail .stats div{background:#fff;padding:9px 11px;display:flex;flex-direction:column}
-  #detail .stats b{font-size:21px;line-height:1.15;font-weight:700} #detail .stats span{font-size:12.5px;color:var(--muted)}
-  #detail h4{margin:18px 0 4px;font-size:15px;font-weight:700}
-  #detail .split{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0 6px}
+  #detail .links{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
+  #detail a.ext{display:inline-block;background:#eef2f5;color:var(--ink);text-decoration:none;font-size:13px;font-weight:600;padding:5px 11px;border-radius:999px}
+  #detail a.ext:hover{background:var(--ink);color:#fff}
+  #detail .split{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:4px 0 8px;gap:2px}
+  #detail .split span{border-radius:3px}
   #detail .split .inc,#detail .splitkey i.inc{background:var(--city)} #detail .split .un,#detail .splitkey i.un{background:var(--county)}
-  #detail .splitkey{display:flex;justify-content:space-between;font-size:12.5px;gap:6px;color:var(--muted)}
-  #detail .splitkey i{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:2px}
-  #detail .fine{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
-  #detail .ptab{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
-  #detail .ptab td{padding:4px 0;border-bottom:1px solid var(--line);cursor:pointer} #detail .ptab td:last-child{text-align:right;color:var(--muted)}
-  #detail .ptab tr:hover td{color:var(--county-line)}
-  #detail .seattag{font-size:11px;background:var(--ink);color:#fff;border-radius:3px;padding:0 5px;vertical-align:1px;margin-left:4px}
-  #detail ul{margin:6px 0 0;padding-left:0;list-style:none;columns:2;column-gap:14px;font-size:14px}
+  #detail .splitkey{display:flex;justify-content:space-between;font-size:13px;gap:10px}
+  #detail .splitkey span:last-child{text-align:right}
+  #detail .splitkey i{display:inline-block;width:9px;height:9px;margin-right:6px;border-radius:2px}
+  #detail .fine{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.45}
+  #detail .ptab{width:100%;border-collapse:collapse;font-size:14px}
+  #detail .ptab td{padding:5px 0;border-top:1px solid var(--line);cursor:pointer} #detail .ptab tr:first-child td{border-top:none}
+  #detail .ptab td:last-child{text-align:right;color:var(--muted)}
+  #detail .ptab tr:hover td{color:var(--flag)}
+  #detail .seattag{font-size:11px;background:var(--ink);color:#fff;border-radius:999px;padding:1px 6px;vertical-align:1px;margin-left:6px}
+  #detail ul{margin:0;padding-left:0;list-style:none;columns:2;column-gap:14px;font-size:14px}
   #detail ul li{cursor:pointer;break-inside:avoid;padding:2px 0}
   #detail ul li:hover,#detail a:hover{color:var(--flag)}
   #detail a{color:var(--county-line);text-underline-offset:2px}
-  #detail .hint{color:var(--muted);margin:12px 0 0}
-  .badge{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;color:#fff;margin-left:6px;vertical-align:1px;white-space:nowrap}
-  .badge.City{background:var(--city)} .badge.Town{background:#138d8d} .badge.CDP{background:#b8761a} .badge.County{background:var(--county-line)} .badge.Twp{background:#4f7fae}
   #detail .pklist,#detail .hplist{columns:1}
-  #detail svg{width:11px;height:11px;display:inline;vertical-align:-1px}
+  #detail .hplist{max-height:210px;overflow-y:auto;scrollbar-width:thin}
+  .sq{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:0}
+  .park-sq{background:#3aa04a}
+  .badge{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;color:#fff;margin-left:6px;vertical-align:1px;white-space:nowrap}
+  .badge.City{background:var(--city)} .badge.Town{background:#138d8d} .badge.CDP{background:#b8761a} .badge.County{background:var(--county-line)} .badge.Twp{background:#4f7fae}
   .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
-  .about{margin:6px 22px 0;border-top:1px solid var(--line);padding:12px 0 4px}
+  .about{background:var(--tile);border-radius:var(--r);padding:14px 16px}
   .about summary{cursor:pointer;font-weight:700;font-size:14.5px;list-style:none;display:flex;align-items:center;gap:8px}
   .about summary::-webkit-details-marker{display:none}
   .about summary::before{content:"";width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
   .about[open] summary::before{transform:rotate(45deg)}
-  .about p{font-size:13.5px;line-height:1.5;margin:10px 0 0;color:#33424d;max-width:62ch}
-  .src{margin:auto 22px 0;padding:14px 0 18px;font-size:11.5px;line-height:1.5;color:var(--muted)}
+  .about p{font-size:13.5px;line-height:1.5;margin:10px 0 0;color:#33424d}
+  .src{padding:4px 6px 6px;font-size:11.5px;line-height:1.5;color:var(--muted)}
   .src a{color:var(--muted)}
   @media (max-width:860px){
-    .app{grid-template-columns:1fr;grid-template-rows:54px 58vh minmax(0,1fr)}
-    aside{border-left:none;border-top:1px solid var(--line)}
+    .app{grid-template-columns:1fr;grid-template-rows:56px 56vh auto;position:static;min-height:100%}
+    aside{overflow:visible}
     .search{width:auto;flex:1;max-width:none} .crumbs .hint{display:none}
     .layers{width:210px}
   }
@@ -251,7 +263,16 @@
     <div id="attrib"></div>
   </div>
   <aside>
-    <div id="detail"><h3>Arkansas</h3><p class="kind">75 counties · 3,011,524 people (2020)</p><div class="row"><span>Cities and towns</span><b id="d-inc"></b></div><div class="row"><span>Census-designated places</span><b id="d-cdp"></b></div><div class="row"><span>Townships</span><b id="d-twp"></b></div><div class="row"><span>State parks</span><b id="d-park"></b></div><div class="row"><span>Historic places</span><b id="d-hist"></b></div><p class="hint">Click a county to open its map, or search for a place.</p></div>
+    <div id="detail">
+      <section class="tile hero span2"><span class="badge County">State</span><h3>Arkansas</h3><p class="sub">Click a county to open its map, or search for a place.</p></section>
+      <section class="tile stat accent"><b>3,011,524</b><span>people in 2020</span></section>
+      <section class="tile stat"><b>75</b><span>counties</span></section>
+      <section class="tile stat"><b id="d-inc"></b><span>cities and towns</span></section>
+      <section class="tile stat"><b id="d-cdp"></b><span>census-designated places</span></section>
+      <section class="tile stat"><b id="d-twp"></b><span>townships</span></section>
+      <section class="tile stat"><b id="d-park"></b><span>state parks</span></section>
+      <section class="tile stat span2"><b id="d-hist"></b><span>places on the National Register of Historic Places</span></section>
+    </div>
     <details class="about">
       <summary>How local government works in Arkansas</summary>
       <p><b>Counties</b> are the main layer of local government. The county judge is the elected executive, not a judge in the usual sense. The quorum court, made up of justices of the peace, is the legislature. Both were set up by Amendment 55 in 1974.</p>
@@ -567,79 +588,71 @@ function linksBlock(wk,ws,fallback){
   return `<div class="links">${a.join("")}</div>`;}
 const cLink=cf=>`<a href="#" data-cf="${cf}">${CN[cf]}</a>`;
 
+const tile=(cls,inner)=>`<section class="tile ${cls}">${inner}</section>`;
+const stat=(v,l,cls="")=>tile("stat "+cls,`<b>${v}</b><span>${l}</span>`);
+const hero=(kind,badgeCls,name,links,sub="")=>tile("hero span2",`<span class="badge ${badgeCls}">${kind}</span><h3>${name}</h3>${sub?`<p class="sub">${sub}</p>`:""}${links}`);
+const rows=(title,html)=>tile("span2",`${title?`<h4>${title}</h4>`:""}${html}`);
+
 function selectCounty(d){const cf=d.properties.cf;const fresh=openCF!==cf;openCounty(cf);ctSel.classed("hi",false);cpSel.classed("hi",false);
   if(!fresh) csvg.transition().duration(500).call(czoom.transform,d3.zoomIdentity);
   const a=placesByC[cf], T=twpsByC[cf], CL=TOPO.clinks[cf], [pop,yr,nm]=CI[cf];
   const landSq=d.properties.la/2589988.11, S=seatsOf(cf);
   const inc=d3.sum(a.filter(p=>p.properties.t!=="CDP"),p=>p.properties.p||0), unin=Math.max(0,pop-inc), incPct=Math.min(100,Math.round(inc/pop*100));
   const byPop=[...a].sort((x,y)=>(y.properties.p||0)-(x.properties.p||0));
-  det().innerHTML=`<h3>${d.properties.n} County<span class="badge County">County</span></h3>
-   ${linksBlock(CL[0],CL[1])}
-   <div class="stats">
-     <div><b>${fmt(pop)}</b><span>people (2020)</span></div>
-     <div><b>#${cRank[cf]}</b><span>of 75 by population</span></div>
-     <div><b>${fmt(Math.round(pop/landSq))}</b><span>per sq mi</span></div>
-     <div><b>${yr}</b><span>year formed</span></div>
-   </div>
-   ${nm?row("Named for",nm):""}
-   ${row(S.length>1?"County seats":"County seat",S.map(p=>`<a href="#" data-pl="${p.properties.id}">${p.properties.n}</a>`).join(" & "))}
-   ${row("Land area",sqmi(d.properties.la)+" sq mi")}${row("FIPS code","05"+cf)}
-   <h4>Government</h4>
-   ${row("County judge","1 (executive)")}
-   ${row("Quorum court",`${jpCount(pop)} justices of the peace`)}
-   ${row("Townships (no government)",T.length)}
-   ${row("Cities / Towns / CDPs",`${cnt(a,"City")} / ${cnt(a,"Town")} / ${cnt(a,"CDP")}`)}
-   <h4>Who governs where people live</h4>
-   <div class="split"><span style="width:${incPct}%" class="inc"></span><span style="width:${100-incPct}%" class="un"></span></div>
-   <div class="splitkey"><span><i class="inc"></i>Cities &amp; towns ≈${incPct}% (${fmt(inc)})</span><span><i class="un"></i>County only ≈${100-incPct}% (${fmt(unin)})</span></div>
-   <p class="fine">People in cities and towns have a mayor and council on top of the county. Everyone else, including CDP residents, is governed directly by the county judge and quorum court.</p>
-   ${(()=>{const P=PARKS.filter(p=>p.cf.includes(cf));return P.length?`<h4>State parks</h4><ul class="pklist">${P.map(p=>`<li data-pk="${p.id}"><svg width="11" height="11" viewBox="-7 -7 14 14"><path d="M0,-6L5.5,4.5L-5.5,4.5Z" fill="#2e8b3d"/></svg> ${p.n}</li>`).join("")}</ul>`:"";})()}
-   ${(histByC[cf]||[]).length?`<h4>Historic places (${(histByC[cf]||[]).length})</h4><ul class="hplist">${histByC[cf].map(h=>`<li data-hp="${h.id}">${h.n}</li>`).join("")}</ul>`:""}
-   <h4>Places by population</h4>
-   ${a.length?`<table class="ptab">${byPop.map(p=>`<tr data-id="${p.properties.id}"><td><span class=dot style="background:var(--${p.properties.t.toLowerCase()})"></span>${p.properties.n}${p.properties.sc?' <span class="seattag">seat</span>':''}</td><td>${fmtP(p.properties.p)}</td></tr>`).join("")}</table>`:"<p>None</p>"}
-   <h4>Townships</h4>${dotList(T)}`;
-  det().querySelectorAll("li[data-hp]").forEach(li=>li.onclick=()=>selectHist(HIST.find(h=>h.id===li.dataset.hp),true));
-  det().querySelectorAll("li[data-pk]").forEach(li=>li.onclick=()=>selectPark(PARKS.find(p=>p.id===li.dataset.pk),true));
-  det().querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>selectPlace(places.find(p=>p.properties.id===tr.dataset.id),true));
+  const P=PARKS.filter(p=>p.cf.includes(cf)), H=histByC[cf]||[];
+  det().innerHTML=
+   hero("County","County",d.properties.n+" County",linksBlock(CL[0],CL[1]),`Seat: ${S.map(p=>`<a href="#" data-pl="${p.properties.id}">${p.properties.n}</a>`).join(" & ")}`)+
+   stat(fmt(pop),"people in 2020","accent")+stat("#"+cRank[cf],"of 75 by population")+
+   stat(fmt(Math.round(pop/landSq)),"people per sq mi")+stat(yr,"year formed")+
+   rows("Government",row("County judge","1, elected executive")+row("Quorum court",`${jpCount(pop)} justices of the peace`)+row("Townships",`${T.length} (no government)`)+row("Cities · towns · CDPs",`${cnt(a,"City")} · ${cnt(a,"Town")} · ${cnt(a,"CDP")}`))+
+   rows("Who governs where people live",`<div class="split"><span style="width:${incPct}%" class="inc"></span><span style="width:${100-incPct}%" class="un"></span></div>
+     <div class="splitkey"><span><i class="inc"></i>City or town ≈${incPct}%<br>${fmt(inc)} people</span><span><i class="un"></i>County only ≈${100-incPct}%<br>${fmt(unin)} people</span></div>
+     <p class="fine">City and town residents have a mayor and council on top of the county. Everyone else, CDP residents included, is governed directly by the county judge and quorum court.</p>`)+
+   (a.length?rows("Places by population",`<table class="ptab">${byPop.map(p=>`<tr data-id="${p.properties.id}"><td><span class=dot style="background:var(--${p.properties.t.toLowerCase()})"></span>${p.properties.n}${p.properties.sc?'<span class="seattag">seat</span>':''}</td><td>${fmtP(p.properties.p)}</td></tr>`).join("")}</table>`):"")+
+   (P.length?tile(H.length?"":"span2",`<h4>State parks</h4><ul class="pklist">${P.map(p=>`<li data-pk="${p.id}"><i class="sq park-sq"></i>${p.n}</li>`).join("")}</ul>`):"")+
+   (H.length?tile(P.length?"":"span2",`<h4>Historic places <span class="cnt">${H.length}</span></h4><ul class="hplist">${H.map(h=>`<li data-hp="${h.id}">${h.n}</li>`).join("")}</ul>`):"")+
+   rows("Townships",dotList(T))+
+   rows("Facts",(nm?row("Named for",nm):"")+row("Land area",sqmi(d.properties.la)+" sq mi")+row("FIPS code","05"+cf));
   wire();}
+
 function selectPark(d,stay){ if(!(stay&&openCF&&d.cf.includes(openCF))) openCounty(d.pc||d.cf[0]);
   ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",x=>x===d);cpkASel.classed("hi",x=>x===d);
   const blanch=d.n.startsWith("Blanchard");
-  det().innerHTML=`<h3>${d.n}<span class="badge Park">State park</span></h3>
-   ${linksBlock(d.wk,d.ws,["https://www.arkansasstateparks.com/parks","Arkansas State Parks"])}
-   ${row(d.cf.length>1?"Counties":"County",d.cf.map(c=>cLink(c)).join(", "))}
-   ${d.ac?row("Size",fmt(d.ac)+" acres"):""}${d.y?row("Established",d.y):""}${d.w?row("Water",d.w):""}
-   ${row("Boundary",d.geo?"Outline from OpenStreetMap (approximate)":"Location only (no outline available)")}
-   ${row("Run by",blanch?"Arkansas State Parks (U.S. Forest Service site, by agreement)":"Arkansas State Parks")}
-   <p class="fine">Arkansas State Parks is a division of the state Department of Parks, Heritage and Tourism, so the parks are run by the state rather than the county.</p>`;
+  det().innerHTML=hero("State park","Park",d.n,linksBlock(d.wk,d.ws,["https://www.arkansasstateparks.com/parks","Arkansas State Parks"]),(d.cf.length>1?"Counties: ":"County: ")+d.cf.map(c=>cLink(c)).join(", "))+
+   stat(d.ac?fmt(d.ac):"—","acres","accent")+stat(d.y||"—","year established")+
+   rows("",(d.w?row("Water",d.w):"")+row("Run by",blanch?"Arkansas State Parks, on a U.S. Forest Service site":"Arkansas State Parks")+row("Boundary",d.geo?"OpenStreetMap outline (approximate)":"Location only"))+
+   tile("span2 note","State parks are run by the state Department of Parks, Heritage and Tourism, not by the county they sit in.");
   wire();}
+
 function selectHist(d,stay){ if(!(stay&&openCF===d.cf)) openCounty(d.cf);
   ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",false);cpkASel.classed("hi",false);chpSel.classed("hi",x=>x===d);
   const P=d.pl&&places.find(p=>p.properties.id===d.pl);
-  det().innerHTML=`<h3>${d.n}<span class="badge Hist">Historic</span></h3>
-   ${linksBlock(d.wk,null,null)}<div class="links">${ext("https://npgallery.nps.gov/AssetDetail/NRIS/"+d.r,"National Register file")}</div>
-   ${row("Listing","National Register of Historic Places")}${row("Reference #",d.r)}
-   ${row("County",cLink(d.cf))}${row("In",P?`<a href="#" data-pl="${P.properties.id}">${P.properties.n}</a>`:"Unincorporated area")}
-   <p class="fine">The National Register is the federal list of places worth preserving. Listing is mostly honorary: it doesn't stop a private owner from changing or tearing down a building, but it can qualify the property for tax credits and grants.</p>`;
+  det().innerHTML=hero("Historic place","Hist",d.n,`<div class="links">${d.wk?ext(wpURL(d.wk),"Wikipedia"):""}${ext("https://npgallery.nps.gov/AssetDetail/NRIS/"+d.r,"National Register file")}</div>`,
+     `${P?`<a href="#" data-pl="${P.properties.id}">${P.properties.n}</a>, `:""}${cLink(d.cf)} County`)+
+   stat(d.r,"National Register #","accent")+stat(P?"In town":"Rural","")+
+   tile("span2 note","The National Register of Historic Places is the federal list of places worth preserving. Listing is mostly honorary: it doesn't stop a private owner from altering or demolishing a building, but it can qualify the property for tax credits and grants.");
   wire();}
+
 function selectTwp(d,zoomIt){const P=d.properties;openCounty(P.cf);cpSel.classed("hi",false);ctSel.classed("hi",t=>t===d);
   if(zoomIt) czoomTo(d,0.55,12);
   const a=placesByT[P.id];
-  det().innerHTML=`<h3>${P.n}<span class="badge Twp">MCD</span></h3>
-   ${linksBlock(P.wk,P.ws,[wpURL(TOPO.clinks[P.cf][0]),CN[P.cf]+" County on Wikipedia"])}
-   ${row("County",cLink(P.cf))}${row("Land area",sqmi(P.la)+" sq mi")}${row("Water area",sqmi(P.wa)+" sq mi")}
-   ${row("Census GEOID",P.id)}${row("Government","None (nonfunctioning)")}
-   <h4>Places centered here</h4>${a.length?dotList(a):"<p>None</p>"}`;
+  det().innerHTML=hero("Township","Twp",P.n,linksBlock(P.wk,P.ws,[wpURL(TOPO.clinks[P.cf][0]),CN[P.cf]+" County on Wikipedia"]),`${cLink(P.cf)} County`)+
+   stat(sqmi(P.la),"sq mi of land","accent")+stat(a.length,a.length===1?"place centered here":"places centered here")+
+   (a.length?rows("Places",dotList(a)):"")+
+   rows("",row("Water area",sqmi(P.wa)+" sq mi")+row("Census GEOID",P.id))+
+   tile("span2 note","Townships are Arkansas's minor civil divisions. They have no government of their own and mainly serve as constable election districts.");
   wire();}
+
 function selectPlace(d,zoomIt){const P=d.properties;if(P.cf&&!(openCF&&d.properties.cf!==openCF&&!zoomIt))openCounty(P.cf);ctSel.classed("hi",false);cpSel.classed("hi",p=>p===d);
   if(zoomIt) czoomTo(d,0.35,20);
-  det().innerHTML=`<h3>${P.n}<span class="badge ${P.t}">${P.t}</span></h3>
-   ${linksBlock(P.wk,P.ws,["https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(P.n+" Arkansas"),"Search Wikipedia"])}
-   ${row("Population (2020)",fmtP(P.p))}${row("Type",typeName[P.t])}${P.sc?row("County seat",P.sc.map(cf=>cLink(cf)).join(", ")):""}${row("County",P.cf?cLink(P.cf):"—")}
-   ${row("Township",P.tw?`<a href="#" data-tw="${P.tw}">${twpBy[P.tw].properties.n}</a>`:"—")}
-   ${row("Land area",sqmi(P.la)+" sq mi")}${row("Water area",sqmi(P.wa)+" sq mi")}
-   ${row("Census GEOID",P.id)}${row("Incorporated",P.t==="CDP"?"No (statistical only)":"Yes")}`;
+  const tw=P.tw&&twpBy[P.tw];
+  det().innerHTML=hero(typeName[P.t],P.t,P.n,linksBlock(P.wk,P.ws,["https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(P.n+" Arkansas"),"Search Wikipedia"]),
+     (P.cf?cLink(P.cf)+" County":"")+(P.sc?` · county seat`:""))+
+   stat(fmtP(P.p),"people in 2020","accent")+stat(sqmi(P.la),"sq mi of land")+
+   rows("",row("Government",P.t==="CDP"?"None of its own (county governs)":"Mayor and council")+(P.sc?row("County seat of",P.sc.map(cf=>cLink(cf)).join(", ")):"")+
+     row("Township",tw?`<a href="#" data-tw="${P.tw}">${tw.properties.n}</a>`:"—")+row("Water area",sqmi(P.wa)+" sq mi")+row("Census GEOID",P.id));
   wire();}
+
 const defaultDetail=det().innerHTML; function resetDetail(){det().innerHTML=defaultDetail;}
 
 document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>mapEl.classList.toggle("hide-"+cb.dataset.layer,!cb.checked));
