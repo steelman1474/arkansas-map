@@ -23,7 +23,7 @@ Visit https://steelman1474.github.io/arkansas-map/. Opening `index.html` directl
 | `data/processed/park_outlines.txt` | Park boundaries from OpenStreetMap (compact; decoded by `build/decode_park_outlines.py`) |
 | `data/processed/nrhp_wikidata.tsv` | National Register of Historic Places listings with coordinates (from Wikidata) |
 | `data/web/highways.topo.json` | Interstates, U.S. and state highways (Census TIGER/Line 2024), loaded by the page |
-| `data/web/roads/05xxx.json` | County and local roads per county, loaded when a county is opened (rebuild with `build/roads.sh`) |
+| `data/web/roads/05xxx.json` | Every road in a county with who maintains it, surface, address range and ArDOT district (Arkansas Centerline File), loaded when a county is opened (rebuild with `build/acf_roads.py`) |
 | `data/processed/links.json` | Wikipedia titles and official websites (from Wikidata) |
 
 Counties and the state outline are built from the townships, so their lines match exactly.
@@ -35,7 +35,8 @@ Requires Node.js (https://nodejs.org).
     npm run build
 
 ## Sources
-- Roads: U.S. Census Bureau TIGER/Line 2024 (primary/secondary roads and county road files)
+- Highways on the state map: U.S. Census Bureau TIGER/Line 2024
+- County road details: Arkansas Centerline File (ACF/ARNOLD), Arkansas GIS Office and ArDOT. Maintainer data is missing for a few counties (Conway, Garland, Greene, Izard, Pike, Pope); highways there are identified from names or Census lines
 - Background maps: OpenStreetMap (Map) and Esri World Imagery (Satellite), loaded live
 - U.S. Census Bureau TIGER/Line shapefiles (county subdivisions 2024, places 2019)
 - Wikidata (populations, seats, links, formation dates, namesakes)

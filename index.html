@@ -60,8 +60,15 @@
   #map.anim-on #insetwrap{display:none}
   .moving .place, .moving .twp{stroke:none}
   .hwy,.road{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
-  .road{stroke:#fff;stroke-opacity:.8;stroke-width:.7px}
-  .road:hover{stroke:var(--ink);stroke-opacity:1;stroke-width:2px}
+  .road{stroke:#fff;stroke-opacity:.85;stroke-width:.8px}
+  .road.c-City{stroke-opacity:.7;stroke-width:.7px}
+  .road.c-Private,.road.c-Unknown{stroke-opacity:.5;stroke-width:.6px}
+  .road.c-Federal{stroke:#d7f0c8}
+  .road.unpaved{stroke-dasharray:3 2}
+  .hits path{stroke:transparent!important;stroke-width:9px!important;filter:none!important;stroke-dasharray:none!important;pointer-events:stroke;cursor:pointer}
+  .vis path{pointer-events:none}
+  .vis .sel{stroke:var(--flag)!important;stroke-opacity:1!important;stroke-width:3.2px!important;stroke-dasharray:none!important;filter:none!important}
+  .badge.Road{background:#5d6b76} .badge.Hwy{background:#b8860b}
   .hwy.kS{stroke:#fff;stroke-width:1.4px}
   .hwy.kU{stroke:#fff;stroke-width:2.2px;filter:drop-shadow(0 0 .6px #44607a)}
   .hwy.kI{stroke:#f2c14e;stroke-width:3px;filter:drop-shadow(0 0 .7px #6b5214)}
@@ -376,19 +383,66 @@ function roadTip(d,kind){return `<b>${kind==="hwy"?hwyName(d):(d.properties.n||"
 fetch("data/web/highways.topo.json").then(r=>r.json()).then(tj=>{HWY=topojson.feature(tj,tj.objects[Object.keys(tj.objects)[0]]).features;
   HWY.sort((a,b)=>"SUI".indexOf(a.properties.k)-"SUI".indexOf(b.properties.k));
   hwySel=gHwy.selectAll("path").data(HWY).join("path").attr("class",hwyClass).attr("d",path)
-    .on("mousemove",(e,d)=>showTip(e,roadTip(d,"hwy"))).on("mouseleave",hideTip);
+    .on("mousemove",(e,d)=>showTip(e,roadTip(d,"hwy"))).on("mouseleave",hideTip)
+    .on("click",(e,d)=>{e.stopPropagation();hideTip();selectTigerHwy(d);});
   if(openCF) drawCountyRoads(openCF);}).catch(()=>{});
 const roadCache={};
-function drawCountyRoads(cf){ if(openCF!==cf) return; const C=countyBy[cf]; const layer=cg.select("g.c-roads"); if(layer.empty()) return; layer.selectAll("*").remove();
+const hwyKind=r=>/^Interstate/.test(r)?"I":/^U\.S\./.test(r)?"U":"S";
+const roadCls=d=>{const P=d.properties; return P.c==="State"?"hwy k"+hwyKind(P.r||""):"road c-"+P.c+(/^Unpaved/.test(P.s||"")?" unpaved":"");};
+let selRoad=null;
+function drawCountyRoads(cf){ if(openCF!==cf) return; const layer=cg.select("g.c-roads"); if(layer.empty()) return; layer.selectAll("*").remove();
   const go=feats=>{ if(openCF!==cf) return;
-    layer.append("g").selectAll("path").data(feats).join("path").attr("class","road").attr("d",cpath)
-      .on("mousemove",(e,d)=>showTip(e,roadTip(d,"road"))).on("mouseleave",hideTip);
-    if(HWY){const [[x0,y0],[x1,y1]]=d3.geoBounds(C); const near=HWY.filter(h=>{const [[a0,b0],[a1,b1]]=h._b||(h._b=d3.geoBounds(h));return a1>=x0&&a0<=x1&&b1>=y0&&b0<=y1;});
-      layer.append("g").selectAll("path").data(near).join("path").attr("class",hwyClass).attr("d",cpath)
-        .on("mousemove",(e,d)=>showTip(e,roadTip(d,"hwy"))).on("mouseleave",hideTip);}};
+    const vis=layer.append("g").attr("class","vis"), hit=layer.append("g").attr("class","hits");
+    const order=[...feats].sort((a,b)=>(a.properties.c==="State")-(b.properties.c==="State"));
+    vis.selectAll("path").data(order).join("path").attr("class",roadCls).attr("d",cpath);
+    hit.selectAll("path").data(order).join("path").attr("class",d=>roadCls(d)+" hit").attr("d",cpath)
+      .on("mousemove",(e,d)=>showTip(e,acfTip(d))).on("mouseleave",hideTip)
+      .on("click",(e,d)=>{e.stopPropagation();hideTip();selectRoad(d,cf);});
+    // some counties' records lack maintainer data: fall back to Census highway lines there
+    if(HWY && feats.filter(f=>f.properties.c==="State").length<40){const C=countyBy[cf]; const [[x0,y0],[x1,y1]]=d3.geoBounds(C);
+      const near=HWY.filter(h=>{const [[a0,b0],[a1,b1]]=h._b||(h._b=d3.geoBounds(h));return a1>=x0&&a0<=x1&&b1>=y0&&b0<=y1;});
+      vis.append("g").selectAll("path").data(near).join("path").attr("class",hwyClass).attr("d",cpath);
+      hit.append("g").selectAll("path").data(near).join("path").attr("class",d=>hwyClass(d)+" hit").attr("d",cpath)
+        .on("mousemove",(e,d)=>showTip(e,roadTip(d,"hwy"))).on("mouseleave",hideTip)
+        .on("click",(e,d)=>{e.stopPropagation();hideTip();selectTigerHwy(d);});}
+    if(selRoad) markRoad(selRoad);};
   if(roadCache[cf]) return go(roadCache[cf]);
   fetch("data/web/roads/05"+cf+".json").then(r=>r.json()).then(tj=>{roadCache[cf]=topojson.feature(tj,tj.objects[Object.keys(tj.objects)[0]]).features; go(roadCache[cf]);})
-   .catch(()=>{ if(HWY) go([]); });}
+   .catch(()=>{});}
+const roadTitle=P=>P.r||P.n||"Unnamed road";
+function acfTip(d){const P=d.properties; return `<b>${roadTitle(P)}</b>${P.r&&P.n&&P.n!==P.r?`<br>${P.n}`:""}<br><span class=k>${({County:"County road",City:"City street",State:"State highway",Federal:"Federal road",Private:"Private road",Other:"Public road",Unknown:"Road"})[P.c]}${P.s?" · "+P.s.toLowerCase():""}</span><br><span class=k>Click for details</span>`;}
+function markRoad(d){selRoad=d; cg.selectAll("g.c-roads .vis path").classed("sel",x=>x===d||(x.properties.r&&x.properties.r===d.properties.r&&d.properties.c==="State"&&x.properties.c==="State")||(!d.properties.r&&d.properties.n&&x.properties.n===d.properties.n&&x.properties.c===d.properties.c));}
+const wikiRoute=r=>{const m=r.match(/(\d+[A-Z]?)/); if(!m) return null; const n=m[1];
+  return /^Interstate/.test(r)?`Interstate ${n} in Arkansas`:/^U\.S\./.test(r)?`U.S. Route ${n} in Arkansas`:`Arkansas Highway ${n}`;};
+function selectRoad(d,cf){const P=d.properties; markRoad(d);
+  ctSel.classed("hi",false);cpSel.classed("hi",false);cpkSel.classed("hi",false);cpkASel.classed("hi",false);chpSel.classed("hi",false);
+  // the named road as a whole within this county
+  const same=(roadCache[cf]||[]).filter(x=>x===d||(P.c==="State"&&P.r?x.properties.r===P.r&&x.properties.c==="State":P.n&&x.properties.n===P.n&&x.properties.c===P.c));
+  const miles=d3.sum(same,x=>x.properties.len)/1609.34;
+  const mid=(()=>{const c=d.geometry.coordinates[0]; return c[Math.floor(c.length/2)];})();
+  const inPl=(placesByC[cf]||[]).find(p=>d3.geoContains(p,mid));
+  const who={County:`${CN[cf]} County, through the county judge's road department`,
+    City:inPl?`City of ${inPl.properties.n}`:`The city or town it runs through${P.ci?" ("+P.ci+")":""}`,
+    State:`Arkansas Department of Transportation${P.di?`, District ${P.di}`:""}`,
+    Federal:"A federal agency, such as the U.S. Forest Service or Army Corps of Engineers",
+    Private:"A private owner. It isn't publicly maintained",Other:"Another public agency",Unknown:"Not recorded for this county in the state road file"}[P.c];
+  const short={County:"County road",City:"City street",State:"State highway",Federal:"Federal road",Private:"Private road",Other:"Public road",Unknown:"Road"}[P.c];
+  const wt=P.c==="State"&&P.r?wikiRoute(P.r):null;
+  const ed=P.ed&&P.ed.length===8?`${P.ed.slice(4,6)}/${P.ed.slice(6,8)}/${P.ed.slice(0,4)}`:"";
+  det().innerHTML=hero(P.c==="State"?"Highway":"Road",P.c==="State"?"Hwy":"Road",roadTitle(P),
+      wt?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(wt),"Wikipedia: route history")}</div>`:"",
+      `${P.r&&P.n&&P.n!==P.r?P.n+" · ":""}${cLink(cf)} County${inPl?` · <a href="#" data-pl="${inPl.properties.id}">${inPl.properties.n}</a>`:""}`)+
+    stat(short,"maintained by "+({County:CN[cf]+" County",City:inPl?inPl.properties.n:"the city",State:"ArDOT",Federal:"the federal government",Private:"a private owner",Other:"a public agency",Unknown:"unknown"})[P.c],"accent")+
+    stat(miles<0.1?Math.round(miles*5280)+" ft":miles.toFixed(1)+" mi",P.c==="State"&&P.r?"of this highway in the county":"long in this county")+
+    rows("Details",row("Maintained by",who)+(P.s?row("Surface",P.s):"")+(P.d?row("Road type",P.d):"")+(P.di?row("ArDOT district",P.di):"")+
+      (P.at>0?row("Addresses",`${fmt(P.af)}–${fmt(P.at)}`):"")+(P.z?row("ZIP code",P.z):"")+(ed?row("Last updated in state road file",ed):"")+(P.inf?row("Note","Highway identified from the road name"):""))+
+    tile("span2 note","Build dates aren't recorded in the state road file. Who maintains each road, its surface and its address ranges come from the Arkansas Centerline File kept by the Arkansas GIS Office and ArDOT."+(wt?" The Wikipedia article covers when this highway was designated and how its route changed.":""));
+  wire();}
+function selectTigerHwy(d){const P=d.properties, name=hwyName(d), wt=wikiRoute(name.replace(/^Highway/,"Highway"));
+  det().innerHTML=hero("Highway","Hwy",name,wt?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(wt),"Wikipedia: route history")}</div>`:"",({I:"Interstate",U:"U.S. highway",S:"State highway"})[P.k])+
+    stat("ArDOT","maintains state, U.S. and Interstate highways in Arkansas","accent span2")+
+    tile("span2 note","Open a county to click individual stretches of road and see their surface, district and address details.");
+  wire();}
 const pkASel = gPkA.selectAll("path").data(PARKS.filter(p=>p.geo)).join("path").attr("class","park-area")
   .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
   .on("click",(e,d)=>{e.stopPropagation();hideTip();selectPark(d);});
@@ -495,6 +549,7 @@ function renderCounty(cf){
   cpSel=gPl.selectAll("path").data(near).join("path").attr("class",d=>"place "+d.properties.t+(d.properties.cf===cf?"":" other")).attr("d",cpath)
     .on("mousemove",(e,d)=>showTip(e,placeTip(d))).on("mouseleave",hideTip)
     .on("click",(e,d)=>{e.stopPropagation();selectPlace(d,false);});
+  selRoad=null;
   cg.append("g").attr("class","c-roads").attr("clip-path","url(#cclip)");
   cg.append("path").datum(C).attr("class","c-outline").attr("d",cpath);
   const hooksLayer=cg.append("g").attr("class","c-hooks");
