@@ -10,9 +10,11 @@ Visit https://steelman1474.github.io/arkansas-map/. Opening `index.html` directl
 | Path | What it is |
 |---|---|
 | `index.html` | The finished map (generated; don't edit by hand) |
-| `build/template.html` | The map's page: layout, styles and interactive code |
+| `build/template.html` | The map's page: layout and styles |
+| `build/app.js` | The map's code: drawing (MapLibre GL, on the graphics card), clicks, panels and search |
+| `data/fonts/` | Label fonts (Noto Sans) used by the map |
 | `build/build-data.mjs` | Combines the data files below into map data |
-| `build/assemble.mjs` | Packs template + libraries + data into `index.html` |
+| `build/assemble.mjs` | Packs template + code + libraries (d3, topojson, MapLibre GL) + data into `index.html` |
 | `data/processed/twp.json` | Township boundaries (Census TIGER/Line 2024, simplified) |
 | `data/processed/places_s.json` | City/town/CDP boundaries (Census TIGER/Line 2019, simplified) |
 | `data/processed/place_pops.json` | 2020 populations of places (from Wikidata) |
