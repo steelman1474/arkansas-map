@@ -401,15 +401,18 @@ function drawCountyRoads(cf){ if(openCF!==cf) return; const layer=cg.select("g.c
       near=HWY.filter(h=>{const [[a0,b0],[a1,b1]]=h._b||(h._b=d3.geoBounds(h));return a1>=x0&&a0<=x1&&b1>=y0&&b0<=y1;});
       near.sort((a,b)=>"SUI".indexOf(a.properties.k)-"SUI".indexOf(b.properties.k));
       // local-road records that trace a highway (e.g. "Old Morrilton Highway" = U.S. 64) are folded into that highway
-      const G=0.0004, grid=new Map(), cell=(x,y)=>Math.floor(x/G)+","+Math.floor(y/G);
-      for(const h of near){const k=keyTiger(h.properties); if(!k) continue; const g=h.geometry; const Ls=g.type==="LineString"?[g.coordinates]:g.coordinates;
-        for(const L of Ls) for(let i=1;i<L.length;i++){const a=L[i-1],b=L[i]; if(Math.max(a[0],b[0])<x0||Math.min(a[0],b[0])>x1||Math.max(a[1],b[1])<y0||Math.min(a[1],b[1])>y1) continue;
-          const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/(G/2))); for(let j=0;j<=n;j++){const c=cell(a[0]+(b[0]-a[0])*j/n,a[1]+(b[1]-a[1])*j/n); if(!grid.has(c)) grid.set(c,k);}}}
-      const hitKey=(x,y)=>{const cx=Math.floor(x/G),cy=Math.floor(y/G); for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++){const k=grid.get((cx+i)+","+(cy+j)); if(k) return k;} return null;};
+      // two grids: coarse (~40 m) for highway-named records, fine (~15 m) for anything that sits right on the line
+      const mk=G=>{const grid=new Map(), cell=(x,y)=>Math.floor(x/G)+","+Math.floor(y/G);
+        for(const h of near){const k=keyTiger(h.properties); if(!k) continue; const g=h.geometry; const Ls=g.type==="LineString"?[g.coordinates]:g.coordinates;
+          for(const L of Ls) for(let i=1;i<L.length;i++){const a=L[i-1],b=L[i]; if(Math.max(a[0],b[0])<x0||Math.min(a[0],b[0])>x1||Math.max(a[1],b[1])<y0||Math.min(a[1],b[1])>y1) continue;
+            const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/(G/2))); for(let j=0;j<=n;j++){const c=cell(a[0]+(b[0]-a[0])*j/n,a[1]+(b[1]-a[1])*j/n); if(!grid.has(c)) grid.set(c,k);}}}
+        return (x,y)=>{const cx=Math.floor(x/G),cy=Math.floor(y/G); for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++){const k=grid.get((cx+i)+","+(cy+j)); if(k) return k;} return null;};};
+      const coarse=mk(0.0004), fine=mk(0.00013);
       const keep=[];
-      for(const f of local){const g=f.geometry; const Ls=g.type==="LineString"?[g.coordinates]:g.coordinates; let n=0,hit=0; const votes={};
-        for(const L of Ls) for(const c of L){n++; const k=hitKey(c[0],c[1]); if(k){hit++; votes[k]=(votes[k]||0)+1;}}
-        if(n>=2&&hit/n>=0.85&&(/hwy|highway|\bus\b|interstate|^i[ -]?\d/i.test(f.properties.n||"")||f.properties.len>=400)){f.properties._k=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0][0]; state.push(f);} else keep.push(f);}
+      for(const f of local){const g=f.geometry; const Ls=g.type==="LineString"?[g.coordinates]:g.coordinates; let n=0,hc=0,hf=0; const votes={};
+        for(const L of Ls) for(const c of L){n++; const kc=coarse(c[0],c[1]); if(kc){hc++; votes[kc]=(votes[kc]||0)+1;} if(fine(c[0],c[1])) hf++;}
+        const hwyName=/hwy|highway|\bus\b|interstate|^i[ -]?\d/i.test(f.properties.n||"");
+        if(n>=2&&((hc/n>=0.85&&(hwyName||f.properties.len>=400))||(hf/n>=0.9&&f.properties.len>=80))){f.properties._k=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0][0]; state.push(f);} else keep.push(f);}
       local=keep;
       vis.append("g").attr("class","thwy").selectAll("path").data(near).join("path").attr("class",hwyClass).attr("d",cpath);}
     else vis.append("g").selectAll("path").data(state).join("path").attr("class",roadCls).attr("d",cpath);
