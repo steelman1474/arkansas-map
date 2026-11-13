@@ -383,21 +383,32 @@ fetch("data/web/highways.topo.json").then(r=>r.json()).then(tj=>{HWY=topojson.fe
   if(openCF) drawCountyRoads(openCF);}).catch(()=>{});
 const roadCache={};
 const hwyKind=r=>/^Interstate/.test(r)?"I":/^U\.S\./.test(r)?"U":"S";
-const roadCls=d=>{const P=d.properties; return P.c==="State"?"hwy k"+hwyKind(P.r||""):"road c-"+P.c+(/^Unpaved/.test(P.s||"")?" unpaved":"");};
+const roadCls=d=>{const P=d.properties; if(P._k) return "hwy k"+P._k[0]; return P.c==="State"?"hwy k"+hwyKind(P.r||""):"road c-"+P.c+(/^Unpaved/.test(P.s||"")?" unpaved":"");};
 let selRoad=null;
 function drawCountyRoads(cf){ if(openCF!==cf) return; const layer=cg.select("g.c-roads"); if(layer.empty()) return; layer.selectAll("*").remove();
   const go=feats=>{ if(openCF!==cf) return;
     const vis=layer.append("g").attr("class","vis"), hit=layer.append("g").attr("class","hits");
-    const local=feats.filter(f=>f.properties.c!=="State"), state=feats.filter(f=>f.properties.c==="State");
-    // local roads: drawn and clickable from the state road file
-    vis.selectAll("path.road").data(local).join("path").attr("class",roadCls).attr("d",cpath);
+    let local=feats.filter(f=>f.properties.c!=="State"); const state=feats.filter(f=>f.properties.c==="State");
     // highways: Census lines are drawn (complete coverage); state-file highway segments sit on top as click targets with details
     let near=[];
     if(HWY){const C=countyBy[cf]; const [[x0,y0],[x1,y1]]=d3.geoBounds(C);
       near=HWY.filter(h=>{const [[a0,b0],[a1,b1]]=h._b||(h._b=d3.geoBounds(h));return a1>=x0&&a0<=x1&&b1>=y0&&b0<=y1;});
       near.sort((a,b)=>"SUI".indexOf(a.properties.k)-"SUI".indexOf(b.properties.k));
+      // local-road records that trace a highway (e.g. "Old Morrilton Highway" = U.S. 64) are folded into that highway
+      const G=0.0004, grid=new Map(), cell=(x,y)=>Math.floor(x/G)+","+Math.floor(y/G);
+      for(const h of near){const k=keyTiger(h.properties); if(!k) continue; const g=h.geometry; const Ls=g.type==="LineString"?[g.coordinates]:g.coordinates;
+        for(const L of Ls) for(let i=1;i<L.length;i++){const a=L[i-1],b=L[i]; if(Math.max(a[0],b[0])<x0||Math.min(a[0],b[0])>x1||Math.max(a[1],b[1])<y0||Math.min(a[1],b[1])>y1) continue;
+          const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/(G/2))); for(let j=0;j<=n;j++){const c=cell(a[0]+(b[0]-a[0])*j/n,a[1]+(b[1]-a[1])*j/n); if(!grid.has(c)) grid.set(c,k);}}}
+      const hitKey=(x,y)=>{const cx=Math.floor(x/G),cy=Math.floor(y/G); for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++){const k=grid.get((cx+i)+","+(cy+j)); if(k) return k;} return null;};
+      const keep=[];
+      for(const f of local){const g=f.geometry; const Ls=g.type==="LineString"?[g.coordinates]:g.coordinates; let n=0,hit=0; const votes={};
+        for(const L of Ls) for(const c of L){n++; const k=hitKey(c[0],c[1]); if(k){hit++; votes[k]=(votes[k]||0)+1;}}
+        if(n>=2&&hit/n>=0.85&&(/hwy|highway|\bus\b|interstate|^i[ -]?\d/i.test(f.properties.n||"")||f.properties.len>=400)){f.properties._k=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0][0]; state.push(f);} else keep.push(f);}
+      local=keep;
       vis.append("g").attr("class","thwy").selectAll("path").data(near).join("path").attr("class",hwyClass).attr("d",cpath);}
     else vis.append("g").selectAll("path").data(state).join("path").attr("class",roadCls).attr("d",cpath);
+    // local roads: drawn and clickable from the state road file
+    vis.insert("g",":first-child").selectAll("path.road").data(local).join("path").attr("class",roadCls).attr("d",cpath);
     vis.append("g").attr("class","shl").selectAll("path").data(state).join("path").attr("class",d=>roadCls(d)+" ghost").attr("d",cpath);
     hit.selectAll("path.r").data(local).join("path").attr("class",d=>roadCls(d)+" hit r").attr("d",cpath)
       .on("mousemove",(e,d)=>showTip(e,acfTip(d))).on("mouseleave",hideTip)
@@ -416,7 +427,7 @@ function drawCountyRoads(cf){ if(openCF!==cf) return; const layer=cg.select("g.c
 /* one key per highway route, shared by Census lines and state-file segments */
 const sufOf=n=>/\b(Bus|B)\b/i.test(n)?"Bus":/\b(Spr|Spur)\b/i.test(n)?"Spur":/\bByp\b/i.test(n)?"Byp":"";
 const keyTiger=P=>{const m=(P.n||"").match(/(\d+[A-Z]?)/); return m?P.k+m[1]+sufOf(P.n):null;};
-const keyACF=P=>{const m=(P.r||"").match(/(\d+[A-Z]?)$/); return m?hwyKind(P.r)+m[1]:null;};
+const keyACF=P=>{if(P._k) return P._k; const m=(P.r||"").match(/(\d+[A-Z]?)$/); return m?hwyKind(P.r)+m[1]:null;};
 const keyTitle=k=>{const m=k.match(/^([IUS])(\d+[A-Z]?)(\w*)$/); if(!m) return "Highway";
   return ({I:"Interstate ",U:"U.S. Highway ",S:"Highway "})[m[1]]+m[2]+({Bus:" Business",Spur:" Spur",Byp:" Bypass"}[m[3]]||"");};
 const keyKind=k=>({I:"Interstate",U:"U.S. highway",S:"State highway"})[k[0]];
