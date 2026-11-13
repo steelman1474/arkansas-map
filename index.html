@@ -263,7 +263,7 @@
         <label><input type="checkbox" data-layer="Hist"><span class="sw" style="background:#7b3fa0;border-radius:50%"></span>Historic places<span class="cnt" id="n-Hist"></span></label>
         <hr>
         <label class="rd"><input type="checkbox" data-layer="Hwy" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 4px no-repeat,#f2c14e;border-color:#8a6d1f"></span>Highways</label>
-        <label class="rd"><input type="checkbox" data-layer="Road" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 2px no-repeat,var(--county)"></span>County &amp; local roads</label>
+        <label class="rd"><input type="checkbox" data-layer="Road"><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 2px no-repeat,var(--county)"></span>County &amp; local roads</label>
         <p class="rdnote">Roads show on the Plain background only.</p>
         <hr>
         <label><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships<span class="cnt" id="n-Twp"></span></label>
@@ -351,7 +351,7 @@ const sdefs = svg.append("defs"); const sClip = sdefs.append("clipPath").attr("i
 const gTiles = svg.append("g").attr("class","tiles").attr("clip-path","url(#sclip)");
 const g = svg.append("g");
 const gC=g.append("g"), gT=g.append("g"), gP=g.append("g"), gB=g.append("g"), gL=g.append("g");
-mapEl.classList.add("hide-Twp","hide-Hist");
+mapEl.classList.add("hide-Twp","hide-Hist","hide-Road");
 
 const cSel = gC.selectAll("path").data(counties).join("path").attr("class","county")
   .on("mousemove",(e,d)=>showTip(e,countyTip(d))).on("mouseleave",hideTip)
