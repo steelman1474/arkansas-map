@@ -78,3 +78,13 @@ subprocess.run(['npx', 'mapshaper',
   '-simplify', 'interval=15', 'keep-shapes', 'target=*',
   '-o', 'data/web/nature.topo.json', 'format=topojson', 'quantization=100000', 'target=*'], check=True)
 print(os.path.getsize('data/web/nature.topo.json'))
+# light version for the statewide map: big rivers and lakes only, coarser outlines
+subprocess.run(['npx', 'mapshaper',
+  '-i', f'{tmp}/rivers.geojson', f'{tmp}/lakes.geojson', f'{tmp}/lands.geojson', f'{tmp}/wma.geojson', 'combine-files', 'snap',
+  '-dissolve', 'n,o', 'target=rivers', '-filter', 'o>=6', 'target=rivers',
+  '-filter', 'a>=0.5', 'target=lakes',
+  '-dissolve', 'n,t,ty', 'calc=ac=max(ac)', 'target=lands',
+  '-dissolve', 'n', 'target=wma',
+  '-simplify', 'interval=250', 'keep-shapes', 'target=*',
+  '-o', 'data/web/nature_lo.topo.json', 'format=topojson', 'quantization=20000', 'target=*'], check=True)
+print(os.path.getsize('data/web/nature_lo.topo.json'))
