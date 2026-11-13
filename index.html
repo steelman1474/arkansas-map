@@ -701,10 +701,14 @@ function hideTip(){tip.style("opacity",0);}
 
 /* Smooth pan/zoom: while a gesture is in progress the already-drawn map is moved and scaled as a picture (cheap for the
    browser); the real redraw happens once the gesture ends or pauses. */
-function fastGesture(svgSel,commit){let T0=null, last=null, idle=null;
-  const flush=()=>{clearTimeout(idle); if(!last) return; const T=last; last=null; svgSel.style("transform",null).style("will-change",null); T0=T; commit(T);};
+function fastGesture(svgSel,commit){let T0=null, last=null, idle=null; const node=svgSel.node();
+  /* d3 finds the mouse position through the map's screen position; while the picture is shifted, report the
+     unshifted position so dragging doesn't feed back on itself (that caused shaking) */
+  const pin=()=>{ if(node.hasOwnProperty("getScreenCTM")) return; const base=node.getScreenCTM(); node.getScreenCTM=()=>base; };
+  const unpin=()=>{ delete node.getScreenCTM; };
+  const flush=()=>{clearTimeout(idle); if(!last) return; const T=last; last=null; svgSel.style("transform",null).style("will-change",null); unpin(); T0=T; commit(T);};
   return {zoom(e){ if(!e.sourceEvent||T0===null){ last=e.transform; flush(); return; }
-      const T=e.transform, s=T.k/T0.k; last=T; svgSel.style("will-change","transform").style("transform",`translate(${T.x-s*T0.x}px,${T.y-s*T0.y}px) scale(${s})`);
+      const T=e.transform, s=T.k/T0.k; last=T; pin(); svgSel.style("will-change","transform").style("transform",`translate(${T.x-s*T0.x}px,${T.y-s*T0.y}px) scale(${s})`);
       clearTimeout(idle); idle=setTimeout(flush,220);},
     end(){flush();}};}
 const sGest=fastGesture(svg,T=>{g.attr("transform",T); sClip.attr("transform",T); renderShade(gShade,proj,T); placeParks(pkSel,proj,T.k); renderTiles(gTiles,proj,T);
