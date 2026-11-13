@@ -41,7 +41,9 @@ def bbox(g):
     xs=[p[0] for r in g['rings'] for p in r]; ys=[p[1] for r in g['rings'] for p in r]; return [min(xs),min(ys),max(xs),max(ys)]
 groups = []
 for a, g in D['lakes']:
-    n = (a.get('gnis_name') or '').strip(); b = bbox(g); geo = poly(g)
+    n = (a.get('gnis_name') or '').strip()
+    if not n: continue  # unnamed ponds have no official (GNIS) name; leave them off
+    b = bbox(g); geo = poly(g)
     hit = None
     if n:
         for G in groups:

@@ -554,7 +554,7 @@ const LANDWHO={nf:"U.S. Forest Service",np:"National Park Service",nwr:"U.S. Fis
   na:"Arkansas Natural Heritage Commission (most natural areas)",mil:"U.S. military or Arkansas National Guard",lp:"The city or county",oth:"A public agency",wma:"Arkansas Game and Fish Commission"};
 const landLayer=k=>({nf:"NF",np:"NPW",nwr:"NPW",wild:"WN",na:"WN",lp:"LP",mil:"MIL",oth:"LP",wma:"WMA"})[k];
 let NAT=null;
-fetch("data/web/nature.topo.json?v=2").then(r=>r.json()).then(tj=>{
+fetch("data/web/nature.topo.json?v=3").then(r=>r.json()).then(tj=>{
   const F=k=>topojson.feature(tj,tj.objects[k]).features.filter(f=>f.geometry);
   const fix=f=>{ if(d3.geoArea(f)>2*Math.PI){const g=f.geometry; if(g.type==="Polygon") g.coordinates.forEach(r=>r.reverse()); else g.coordinates.forEach(p=>p.forEach(r=>r.reverse()));} return f;};
   NAT={rivers:F("rivers").flatMap(f=>f.properties.n||f.geometry.type!=="MultiLineString"?[f]:f.geometry.coordinates.map(c=>({type:"Feature",properties:f.properties,geometry:{type:"LineString",coordinates:c}}))), lakes:F("lakes").map(fix), lands:F("lands").map(fix), wma:F("wma").map(fix)};
