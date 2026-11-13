@@ -430,8 +430,8 @@ function drawCountyRoads(cf){ if(openCF!==cf) return; const layer=cg.select("g.c
       .on("click",(e,d)=>{e.stopPropagation();hideTip();const k=keyACF(d.properties); k?selectHighway(k,cf,d):selectRoad(d,cf);});
     if(selRoad) markRoad(selRoad);};
   if(roadCache[cf]) return go(roadCache[cf]);
-  fetch("data/web/roads/05"+cf+".json").then(r=>r.json()).then(tj=>{roadCache[cf]=topojson.feature(tj,tj.objects[Object.keys(tj.objects)[0]]).features; go(roadCache[cf]);})
-   .catch(()=>{});}
+  fetch("data/web/roads/05"+cf+".json").then(r=>r.json()).then(tj=>{roadCache[cf]=topojson.feature(tj,tj.objects[Object.keys(tj.objects)[0]]).features.filter(f=>f.geometry&&f.geometry.coordinates&&f.geometry.coordinates.length); go(roadCache[cf]);})
+   .catch(e=>console.error("roads for county "+cf+" failed:",e));}
 
 /* one key per highway route, shared by Census lines and state-file segments */
 const sufOf=n=>/\b(Bus|B)\b/i.test(n)?"Bus":/\b(Spr|Spur)\b/i.test(n)?"Spur":/\bByp\b/i.test(n)?"Byp":"";
