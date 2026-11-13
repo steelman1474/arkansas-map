@@ -4,7 +4,7 @@ An interactive map of Arkansas's 75 counties, 1,095 townships (minor civil divis
 and 540 cities, towns and census-designated places. Click a county to open its own map.
 
 ## Just want to look at it?
-Open `index.html` in any web browser (double-click it). It works offline.
+Visit https://steelman1474.github.io/arkansas-map/. Opening `index.html` directly from disk also works, but road layers need the page to be served over the web.
 
 ## Project layout
 | Path | What it is |
@@ -22,6 +22,8 @@ Open `index.html` in any web browser (double-click it). It works offline.
 | `data/processed/state_parks.json` | Same, converted for the build |
 | `data/processed/park_outlines.txt` | Park boundaries from OpenStreetMap (compact; decoded by `build/decode_park_outlines.py`) |
 | `data/processed/nrhp_wikidata.tsv` | National Register of Historic Places listings with coordinates (from Wikidata) |
+| `data/web/highways.topo.json` | Interstates, U.S. and state highways (Census TIGER/Line 2024), loaded by the page |
+| `data/web/roads/05xxx.json` | County and local roads per county, loaded when a county is opened (rebuild with `build/roads.sh`) |
 | `data/processed/links.json` | Wikipedia titles and official websites (from Wikidata) |
 
 Counties and the state outline are built from the townships, so their lines match exactly.
@@ -33,6 +35,7 @@ Requires Node.js (https://nodejs.org).
     npm run build
 
 ## Sources
+- Roads: U.S. Census Bureau TIGER/Line 2024 (primary/secondary roads and county road files)
 - Background maps: OpenStreetMap (Map) and Esri World Imagery (Satellite), loaded live
 - U.S. Census Bureau TIGER/Line shapefiles (county subdivisions 2024, places 2019)
 - Wikidata (populations, seats, links, formation dates, namesakes)

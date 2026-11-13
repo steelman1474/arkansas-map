@@ -59,6 +59,21 @@
   #map.anim-on #svg, #map.anim-on #csvg{visibility:hidden}
   #map.anim-on #insetwrap{display:none}
   .moving .place, .moving .twp{stroke:none}
+  .hwy,.road{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+  .road{stroke:#fff;stroke-opacity:.8;stroke-width:.7px}
+  .road:hover{stroke:var(--ink);stroke-opacity:1;stroke-width:2px}
+  .hwy.kS{stroke:#fff;stroke-width:1.4px}
+  .hwy.kU{stroke:#fff;stroke-width:2.2px;filter:drop-shadow(0 0 .6px #44607a)}
+  .hwy.kI{stroke:#f2c14e;stroke-width:3px;filter:drop-shadow(0 0 .7px #6b5214)}
+  #svg .hwy.kS{stroke-width:.8px;stroke-opacity:.85}
+  #svg .hwy.kU{stroke-width:1.3px} #svg .hwy.kI{stroke-width:2px}
+  .hwy:hover{stroke:var(--ink)}
+  .moving .road{stroke-opacity:.5}
+  #map.bm-osm .hwy,#map.bm-osm .road,#map.bm-sat .hwy,#map.bm-sat .road{display:none}
+  #map.hide-Hwy .hwy,#map.hide-Road .road{display:none}
+  .rdnote{margin:2px 6px 4px 29px;font-size:11.5px;color:var(--muted)}
+  .layers:not(.no-roads) .rdnote{display:none}
+  .layers.no-roads label.rd{opacity:.45}
   .hp{fill:#7b3fa0;stroke:#fff;cursor:pointer}
   .hp:hover,.chp:hover .hp,.chp.hi .hp{fill:#e3b6ff;stroke:#3b1452}
   .chp{cursor:pointer}
@@ -247,6 +262,10 @@
         <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:#3aa04a"></span>State parks<span class="cnt" id="n-Park"></span></label>
         <label><input type="checkbox" data-layer="Hist" checked><span class="sw" style="background:#7b3fa0;border-radius:50%"></span>Historic places<span class="cnt" id="n-Hist"></span></label>
         <hr>
+        <label class="rd"><input type="checkbox" data-layer="Hwy" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 4px no-repeat,#f2c14e;border-color:#8a6d1f"></span>Highways</label>
+        <label class="rd"><input type="checkbox" data-layer="Road" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 2px no-repeat,var(--county)"></span>County &amp; local roads</label>
+        <p class="rdnote">Roads show on the Plain background only.</p>
+        <hr>
         <label><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships<span class="cnt" id="n-Twp"></span></label>
         <label><input type="checkbox" data-layer="County" checked><span class="sw" style="background:#fff;border:2px solid var(--county-line)"></span>County lines<span class="cnt" id="n-County"></span></label>
         <label><input type="checkbox" id="labels" checked><span class="sw" style="border:none;font-size:11px;font-weight:700;line-height:14px;text-align:center;color:var(--county-line)">Aa</span>County names</label>
@@ -349,6 +368,27 @@ const PARKS = TOPO.parks; PARKS.forEach((p,i)=>p.id="pk"+i);
 document.getElementById("n-Park").textContent=PARKS.length;
 const parkSym = p=>d3.symbol(d3.symbolTriangle, p.ac? Math.max(70, Math.min(260, 40+Math.sqrt(p.ac)*2.2)) : 70)();
 const gPkA = g.insert("g", ()=>gB.node()).attr("class","parks-area");
+const gHwy = g.insert("g", ()=>gB.node()).attr("class","hwys");
+let HWY=null, hwySel=d3.select(null);
+const hwyClass=d=>"hwy k"+d.properties.k;
+const hwyName=d=>{const n=d.properties.n||""; return n.replace(/^I- ?/,"Interstate ").replace(/^US Hwy/,"U.S. Highway").replace(/^State Hwy/,"Highway")||"Highway";};
+function roadTip(d,kind){return `<b>${kind==="hwy"?hwyName(d):(d.properties.n||"Unnamed road")}</b><br><span class=k>${kind==="hwy"?({I:"Interstate",U:"U.S. highway",S:"State highway"})[d.properties.k]:"County or local road"}</span>`;}
+fetch("data/web/highways.topo.json").then(r=>r.json()).then(tj=>{HWY=topojson.feature(tj,tj.objects[Object.keys(tj.objects)[0]]).features;
+  HWY.sort((a,b)=>"SUI".indexOf(a.properties.k)-"SUI".indexOf(b.properties.k));
+  hwySel=gHwy.selectAll("path").data(HWY).join("path").attr("class",hwyClass).attr("d",path)
+    .on("mousemove",(e,d)=>showTip(e,roadTip(d,"hwy"))).on("mouseleave",hideTip);
+  if(openCF) drawCountyRoads(openCF);}).catch(()=>{});
+const roadCache={};
+function drawCountyRoads(cf){ if(openCF!==cf) return; const C=countyBy[cf]; const layer=cg.select("g.c-roads"); if(layer.empty()) return; layer.selectAll("*").remove();
+  const go=feats=>{ if(openCF!==cf) return;
+    layer.append("g").selectAll("path").data(feats).join("path").attr("class","road").attr("d",cpath)
+      .on("mousemove",(e,d)=>showTip(e,roadTip(d,"road"))).on("mouseleave",hideTip);
+    if(HWY){const [[x0,y0],[x1,y1]]=d3.geoBounds(C); const near=HWY.filter(h=>{const [[a0,b0],[a1,b1]]=h._b||(h._b=d3.geoBounds(h));return a1>=x0&&a0<=x1&&b1>=y0&&b0<=y1;});
+      layer.append("g").selectAll("path").data(near).join("path").attr("class",hwyClass).attr("d",cpath)
+        .on("mousemove",(e,d)=>showTip(e,roadTip(d,"hwy"))).on("mouseleave",hideTip);}};
+  if(roadCache[cf]) return go(roadCache[cf]);
+  fetch("data/web/roads/05"+cf+".json").then(r=>r.json()).then(tj=>{roadCache[cf]=topojson.feature(tj,tj.objects[Object.keys(tj.objects)[0]]).features; go(roadCache[cf]);})
+   .catch(()=>{ if(HWY) go([]); });}
 const pkASel = gPkA.selectAll("path").data(PARKS.filter(p=>p.geo)).join("path").attr("class","park-area")
   .on("mousemove",(e,d)=>showTip(e,parkTip(d))).on("mouseleave",hideTip)
   .on("click",(e,d)=>{e.stopPropagation();hideTip();selectPark(d);});
@@ -415,13 +455,14 @@ function renderTiles(layer,projection,T){
 const tileCache=new Map();
 function tileImg(url){let im=tileCache.get(url); if(!im){im=new Image(); im.crossOrigin="anonymous"; im.src=url; tileCache.set(url,im);} return im;}
 function setBasemap(v){basemap=v; mapEl.classList.remove("bm-osm","bm-sat"); if(v!=="none") mapEl.classList.add("bm-"+v);
+  document.getElementById("layers").classList.toggle("no-roads",v!=="none");
   document.getElementById("attrib").innerHTML=v==="none"?"":BASEMAPS[v].attrib;
   renderTiles(gTiles,proj,d3.zoomTransform(svg.node())); if(openCF) renderTiles(cgTiles,cproj,d3.zoomTransform(csvg.node()));}
 document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasemap(r.value));
 
 function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
   proj.fitExtent(fitBox(),stateF);
-  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); pkASel.attr("d",d=>path(d.geo));
+  [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); pkASel.attr("d",d=>path(d.geo)); hwySel.attr("d",path);
   hpSel.attr("cx",d=>proj(d.ll)[0]).attr("cy",d=>proj(d.ll)[1]); sizeHist(d3.zoomTransform(svg.node()).k); sClip.attr("d",path(stateF)); placeParks(pkSel,proj,d3.zoomTransform(svg.node()).k);
   lSel.attr("x",d=>path.centroid(d)[0]).attr("y",d=>path.centroid(d)[1]+4);
   renderTiles(gTiles,proj,d3.zoomTransform(svg.node()));
@@ -454,6 +495,7 @@ function renderCounty(cf){
   cpSel=gPl.selectAll("path").data(near).join("path").attr("class",d=>"place "+d.properties.t+(d.properties.cf===cf?"":" other")).attr("d",cpath)
     .on("mousemove",(e,d)=>showTip(e,placeTip(d))).on("mouseleave",hideTip)
     .on("click",(e,d)=>{e.stopPropagation();selectPlace(d,false);});
+  cg.append("g").attr("class","c-roads").attr("clip-path","url(#cclip)");
   cg.append("path").datum(C).attr("class","c-outline").attr("d",cpath);
   const hooksLayer=cg.append("g").attr("class","c-hooks");
   const gLab=cg.append("g").attr("class","c-labels");
@@ -484,6 +526,7 @@ function renderCounty(cf){
   gLab.selectAll("text.pl").data(own).join("text").attr("class",d=>"pl "+d.properties.t+(d.properties.sc?" seat":""))
     .attr("x",d=>cproj(d.properties.ip)[0]).attr("y",d=>cproj(d.properties.ip)[1]).text(d=>d.properties.n);
   csvg.call(czoom.transform,d3.zoomIdentity); renderTiles(cgTiles,cproj,d3.zoomIdentity); sizeCountyLabels();
+  drawCountyRoads(cf);
   countyHooks.forEach(h=>h(cf,{g:hooksLayer,proj:cproj,path:cpath,county:C}));
   drawInset();
 }
