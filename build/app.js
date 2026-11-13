@@ -51,7 +51,7 @@ const reorient = f => { if(d3.geoArea(f)>2*Math.PI){const g=f.geometry; if(g.typ
 
 const mapEl = document.getElementById("map"), tip = d3.select("#tip");
 const BG = "#eef1f3";
-mapEl.classList.add("hide-Twp","hide-Hist","hide-Road","hide-WMA","hide-WN","hide-LP","hide-MIL","hide-Terrain","hide-Flood");
+mapEl.classList.add("hide-Twp","hide-Hist","hide-Road","hide-WN","hide-LP","hide-MIL","hide-Terrain","hide-Flood");
 const isOn = k => !mapEl.classList.contains("hide-"+k);
 
 /* ---------- the map ---------- */
@@ -76,7 +76,7 @@ function refreshVis(){ for(const L of LAYERS){ if(!map.getLayer(L.id)) continue;
   ["places-fill","places-line"].forEach(id=>map.setFilter(id,["in",["get","t"],["literal",types]]));
   map.setFilter("place-dots",["all",["in",["get","t"],["literal",types]],["==",["get","cf"],openCF||"-"]]);
   map.setFilter("place-lbl",["all",["in",["get","t"],["literal",types]],["==",["get","cf"],openCF||"-"]]);
-  const lands=["NF","NPW","WMA","WN","LP","MIL"].filter(isOn);
+  const lands=["NF","NPW","WN","LP","MIL"].filter(isOn);
   ["land-fill","land-line"].forEach(id=>map.setFilter(id,["in",["get","L"],["literal",lands]]));
   map.setFilter("park-lbl", ["in",openCF||"-",["get","cfs"]]);
   map.setFilter("hist-lbl", ["==",["get","cf"],openCF||"-"]);
@@ -347,7 +347,7 @@ function loadNature(){ fetch("data/web/nature.topo.json?v=5").then(r=>r.json()).
   NAT.wma.forEach(f=>f.properties.t="wma");
   /* the source layer tags a stray parcel in Ashley County as Ouachita National Forest; the forest is entirely in west-central Arkansas */
   NAT.lands.forEach(f=>{if(f.properties.n==="Ouachita National Forest"&&f.geometry.type==="MultiPolygon") f.geometry.coordinates=f.geometry.coordinates.filter(p=>p[0][0][1]>34);});
-  NAT.areas=[...NAT.lands,...NAT.wma].sort((a,b)=>d3.geoArea(b)-d3.geoArea(a));
+  NAT.areas=[...NAT.lands].sort((a,b)=>d3.geoArea(b)-d3.geoArea(a));
   map.getSource("nat-areas").setData(FC(NAT.areas.map((f,i)=>feat(f.geometry,{t:f.properties.t,L:landLayer(f.properties.t),_i:i},i))));
   map.getSource("nat-lakes").setData(FC(NAT.lakes.map((f,i)=>feat(f.geometry,{_i:i},i))));
   map.getSource("nat-rivers").setData(FC(NAT.rivers.map((f,i)=>feat(f.geometry,{o:f.properties.o||3,_i:i},i))));
