@@ -67,6 +67,7 @@
   .road.unpaved{stroke-dasharray:3 2}
   .hits path{stroke:transparent!important;stroke-width:9px!important;filter:none!important;stroke-dasharray:none!important;pointer-events:stroke;cursor:pointer}
   .vis path{pointer-events:none}
+  .vis .ghost{stroke:none!important;filter:none!important}
   .vis .sel{stroke:var(--flag)!important;stroke-opacity:1!important;stroke-width:3.2px!important;stroke-dasharray:none!important;filter:none!important}
   .badge.Road{background:#5d6b76} .badge.Hwy{background:#b8860b}
   .hwy.kS{stroke:#fff;stroke-width:1.4px}
@@ -393,18 +394,26 @@ let selRoad=null;
 function drawCountyRoads(cf){ if(openCF!==cf) return; const layer=cg.select("g.c-roads"); if(layer.empty()) return; layer.selectAll("*").remove();
   const go=feats=>{ if(openCF!==cf) return;
     const vis=layer.append("g").attr("class","vis"), hit=layer.append("g").attr("class","hits");
-    const order=[...feats].sort((a,b)=>(a.properties.c==="State")-(b.properties.c==="State"));
-    vis.selectAll("path").data(order).join("path").attr("class",roadCls).attr("d",cpath);
-    hit.selectAll("path").data(order).join("path").attr("class",d=>roadCls(d)+" hit").attr("d",cpath)
+    const local=feats.filter(f=>f.properties.c!=="State"), state=feats.filter(f=>f.properties.c==="State");
+    // local roads: drawn and clickable from the state road file
+    vis.selectAll("path.road").data(local).join("path").attr("class",roadCls).attr("d",cpath);
+    // highways: Census lines are drawn (complete coverage); state-file highway segments sit on top as click targets with details
+    let near=[];
+    if(HWY){const C=countyBy[cf]; const [[x0,y0],[x1,y1]]=d3.geoBounds(C);
+      near=HWY.filter(h=>{const [[a0,b0],[a1,b1]]=h._b||(h._b=d3.geoBounds(h));return a1>=x0&&a0<=x1&&b1>=y0&&b0<=y1;});
+      near.sort((a,b)=>"SUI".indexOf(a.properties.k)-"SUI".indexOf(b.properties.k));
+      vis.append("g").attr("class","thwy").selectAll("path").data(near).join("path").attr("class",hwyClass).attr("d",cpath);}
+    else vis.append("g").selectAll("path").data(state).join("path").attr("class",roadCls).attr("d",cpath);
+    vis.append("g").attr("class","shl").selectAll("path").data(state).join("path").attr("class",d=>roadCls(d)+" ghost").attr("d",cpath);
+    hit.selectAll("path.r").data(local).join("path").attr("class",d=>roadCls(d)+" hit r").attr("d",cpath)
       .on("mousemove",(e,d)=>showTip(e,acfTip(d))).on("mouseleave",hideTip)
       .on("click",(e,d)=>{e.stopPropagation();hideTip();selectRoad(d,cf);});
-    // some counties' records lack maintainer data: fall back to Census highway lines there
-    if(HWY && feats.filter(f=>f.properties.c==="State").length<40){const C=countyBy[cf]; const [[x0,y0],[x1,y1]]=d3.geoBounds(C);
-      const near=HWY.filter(h=>{const [[a0,b0],[a1,b1]]=h._b||(h._b=d3.geoBounds(h));return a1>=x0&&a0<=x1&&b1>=y0&&b0<=y1;});
-      vis.append("g").selectAll("path").data(near).join("path").attr("class",hwyClass).attr("d",cpath);
-      hit.append("g").selectAll("path").data(near).join("path").attr("class",d=>hwyClass(d)+" hit").attr("d",cpath)
-        .on("mousemove",(e,d)=>showTip(e,roadTip(d,"hwy"))).on("mouseleave",hideTip)
-        .on("click",(e,d)=>{e.stopPropagation();hideTip();selectTigerHwy(d);});}
+    hit.append("g").selectAll("path").data(near).join("path").attr("class",d=>hwyClass(d)+" hit").attr("d",cpath)
+      .on("mousemove",(e,d)=>showTip(e,roadTip(d,"hwy"))).on("mouseleave",hideTip)
+      .on("click",(e,d)=>{e.stopPropagation();hideTip();selectTigerHwy(d);});
+    hit.append("g").selectAll("path").data(state).join("path").attr("class",d=>roadCls(d)+" hit").attr("d",cpath)
+      .on("mousemove",(e,d)=>showTip(e,acfTip(d))).on("mouseleave",hideTip)
+      .on("click",(e,d)=>{e.stopPropagation();hideTip();selectRoad(d,cf);});
     if(selRoad) markRoad(selRoad);};
   if(roadCache[cf]) return go(roadCache[cf]);
   fetch("data/web/roads/05"+cf+".json").then(r=>r.json()).then(tj=>{roadCache[cf]=topojson.feature(tj,tj.objects[Object.keys(tj.objects)[0]]).features; go(roadCache[cf]);})

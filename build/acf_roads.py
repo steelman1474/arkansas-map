@@ -81,7 +81,7 @@ for r in rows:
     props = {'n': (name or '').strip(), 'c': norm_class(cls, sg), 's': norm_surface(surf), 'd': norm_design(des),
              'r': route_label(sg, rt), 'di': (dist or '').strip(), 'ci': (city or '').strip(), 'z': (z or '').strip(),
              'af': af or 0, 'at': at or 0, 'ed': (ed or '')[:8], 'len': ln or 0, 'cf': cf or '', 'inf': 0}
-    if props['c'] == 'Unknown' or (props['c'] == 'State' and not props['r']):
+    if props['c'] in ('Unknown', 'Federal') or (props['c'] == 'State' and not props['r']):
         guess = infer_from_name(name)
         if guess:
             props['c'] = 'State'; props['r'] = props['r'] or guess; props['inf'] = 1
@@ -100,6 +100,19 @@ for(const f of F.features){const p=f.geometry.coordinates[0][0];f.properties.cf=
 fs.writeFileSync("/tmp/acf_nocounty.geojson",JSON.stringify(F));'''], check=True)
     for f in json.load(open(tmp))['features']:
         if f['properties']['cf']: feats[f['properties']['cf']].append(f)
+
+for cf, fs in feats.items():
+    known = {}
+    for f in fs:
+        r = f['properties']['r']
+        if r and not f['properties']['inf']:
+            m = re.search(r'(\d+)$', r)
+            if m and not r.startswith('Highway'): known[m.group(1)] = r
+    for f in fs:
+        r = f['properties']['r']
+        if f['properties']['inf'] and r.startswith('Highway'):
+            n = r.split()[-1]
+            if n in known: f['properties']['r'] = known[n]
 
 os.makedirs('data/web/roads', exist_ok=True)
 for cf, fs in sorted(feats.items()):
