@@ -5,17 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Arkansas Counties &amp; Places</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#e8e6df; --frame:#ef9417; --panel:#cfcdc7; --ink:#1b1b1b; --muted:#555;
-    --county:#7fb2e5; --county-hi:#3f86cf; --county-line:#2c4a6b;
-    --city:#d9302b; --town:#22c7c7; --cdp:#d28a12; --sel:#ffd84a; --twp:#86bdf0;
+    --ink:#1c2a35; --ink-2:#2b3d4b; --paper:#f6f7f5; --ground:#e2e6e9; --line:#d3d9dd; --muted:#5d6b76;
+    --county:#9ec3e6; --county-hi:#6fa6db; --county-line:#3a5a78; --flag:#b5202e;
+    --city:#d44a3c; --town:#1fb3b3; --cdp:#d99023; --sel:#ffd84a; --twp:#a9cdee;
+    --panel:#ffffff;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:var(--frame);font-family:"Barlow Semi Condensed",system-ui,sans-serif;color:var(--ink)}
-  .wrap{position:absolute;inset:14px;background:var(--bg);display:grid;grid-template-columns:minmax(0,1fr) 320px;overflow:hidden}
-  #map{position:relative;overflow:hidden}
+  html,body{margin:0;height:100%;font-family:"Public Sans",system-ui,sans-serif;color:var(--ink);background:var(--paper);font-variant-numeric:tabular-nums}
+  button,input{font:inherit}
+  :focus-visible{outline:2px solid var(--flag);outline-offset:2px}
+  .app{position:fixed;inset:0;display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:54px minmax(0,1fr)}
+  /* header: diamond mark, breadcrumb, search */
+  .bar{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:0 16px 0 14px;background:var(--ink);color:#fff;z-index:10}
+  .crumbs{display:flex;align-items:center;gap:8px;min-width:0;font-size:17px;white-space:nowrap}
+  .crumbs button{background:none;border:none;color:#fff;padding:4px 2px;cursor:pointer;display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.01em}
+  .crumbs button:hover{text-decoration:underline;text-underline-offset:3px}
+  .diamond{width:15px;height:15px;transform:rotate(45deg);background:var(--flag);box-shadow:0 0 0 2px #fff inset,0 0 0 1px var(--flag)}
+  .crumbs .sep{color:#8fa3b3}
+  .crumbs #ttl{font-weight:600;overflow:hidden;text-overflow:ellipsis}
+  .crumbs #ttl:empty,.crumbs #ttl:empty+.x{display:none}
+  .crumbs .hint{color:#9fb1bf;font-size:14px;font-weight:400}
+  .app.cv .crumbs .hint{display:none}
+  .search{margin-left:auto;position:relative;width:340px;max-width:44vw}
+  .search input{width:100%;height:34px;padding:0 12px 0 34px;border:1px solid #3d5466;border-radius:6px;background:#26384a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239fb1bf' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 4 4'/%3E%3C/svg%3E") 11px 50%/14px no-repeat;color:#fff;font-size:15px}
+  .search input::placeholder{color:#9fb1bf}
+  .search input:focus{background-color:#fff;color:var(--ink);border-color:#fff;outline:none}
+  #results{position:absolute;top:40px;left:0;right:0;list-style:none;margin:0;padding:4px;background:#fff;border-radius:6px;box-shadow:0 8px 28px rgba(16,30,42,.28);max-height:60vh;overflow-y:auto;color:var(--ink)}
+  #results:empty{display:none}
+  #results li{padding:7px 10px;cursor:pointer;border-radius:4px;font-size:14.5px;display:flex;align-items:center;gap:6px}
+  #results li:hover{background:#eef2f5}
+  #results li .badge{margin-left:auto}
+  #results .k{color:var(--muted);font-size:13px}
+  #map{position:relative;overflow:hidden;background:var(--ground)}
   svg{width:100%;height:100%;display:block;cursor:grab}
   svg:active{cursor:grabbing}
   .county{fill:var(--county);stroke:var(--county-line);stroke-width:.8px;vector-effect:non-scaling-stroke;transition:fill .12s}
@@ -44,7 +68,7 @@
   #map.bm-sat text.hpl{fill:#f0d9ff;stroke:rgba(0,0,0,.75)}
   #map.hide-Hist .hp, #map.hide-Hist .chp{display:none}
   .badge.Hist{background:#7b3fa0}
-  #detail .hplist{list-style:none;padding:0;margin:4px 0 0;font-size:13.5px;max-height:220px;overflow-y:auto;border:1px solid #d6d3cc;border-radius:3px;padding:4px 6px;background:#f1efe9}
+  #detail .hplist{list-style:none;margin:4px 0 0;font-size:14px;max-height:240px;overflow-y:auto;padding:2px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
   #detail .hplist li{cursor:pointer;padding:1px 0} #detail .hplist li:hover{text-decoration:underline}
   .park-area{fill:#3aa04a;fill-opacity:.6;stroke:#1f6b2b;stroke-width:1px;vector-effect:non-scaling-stroke;cursor:pointer}
   .park-area:hover,.park-area.hi{fill:#5fd06e;fill-opacity:.8;stroke:#0b3d14;stroke-width:1.8px}
@@ -71,7 +95,6 @@
   .tiles image{pointer-events:none}
   #attrib{position:absolute;right:14px;bottom:2px;font-size:10.5px;color:#333;background:rgba(255,255,255,.75);padding:1px 6px;border-radius:3px;z-index:3}
   #attrib:empty{display:none} #attrib a{color:#333}
-  #map.cview #attrib{right:194px}
   .bmsel{display:flex;align-items:center;gap:10px;margin:8px 0 4px;font-size:15px;flex-wrap:wrap}
   .bmsel span{font-weight:600} .bmsel label{display:flex;align-items:center;gap:4px;margin:0;cursor:pointer}
   .moving{shape-rendering:optimizeSpeed}
@@ -93,11 +116,11 @@
   .c-outline{fill:none;stroke:#0d1f33;stroke-width:2.6px;vector-effect:non-scaling-stroke;pointer-events:none}
   .back{position:absolute;left:14px;top:14px;z-index:4;border:none;border-radius:4px;background:#1d3550;color:#fff;font:inherit;font-size:16px;font-weight:600;padding:7px 14px;cursor:pointer}
   .back:hover{background:#2f5683}
-  #insetwrap{position:absolute;right:14px;bottom:16px;width:170px;background:rgba(232,230,223,.92);border:1px solid #bdbab3;border-radius:4px;padding:4px 5px 2px;cursor:pointer;z-index:3}
+  #insetwrap{position:absolute;right:14px;bottom:22px;width:150px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:6px 6px 3px 2px;cursor:pointer;z-index:3}
   #insetwrap svg{width:100%;height:auto;display:block}
   #insetwrap span{display:block;text-align:center;font-size:12px;color:var(--muted)}
-  #insetwrap:hover{border-color:#1d3550}
-  .i-c{fill:#cfdced;stroke:#fff;stroke-width:.4px} .i-c.on{fill:var(--city)} .i-s{fill:none;stroke:#333;stroke-width:.8px}
+  #insetwrap:hover{box-shadow:0 0 0 2px var(--ink)}
+  .i-c{fill:#d6e4f1;stroke:#fff;stroke-width:.4px} .i-c.on{fill:var(--flag)} .i-s{fill:none;stroke:#333;stroke-width:.8px}
   text.tl{font-style:italic;font-weight:500;fill:#1f4a75;text-anchor:middle;dominant-baseline:middle;pointer-events:none;paint-order:stroke;stroke:rgba(255,255,255,.75)}
   text.pl{font-weight:700;fill:#111;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:rgba(255,255,255,.9)}
   text.pl.seat{text-decoration:underline}
@@ -108,100 +131,135 @@
   .place:hover,.place.hi{fill:var(--sel);stroke:#000;stroke-width:1.5px}
   .hidden{display:none}
   .label{font-size:11px;font-weight:600;fill:#14273b;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:rgba(255,255,255,.7);stroke-width:2.5px}
-  #tip{position:absolute;pointer-events:none;background:rgba(20,20,20,.92);color:#fff;padding:7px 10px;border-radius:6px;font-size:14px;line-height:1.3;max-width:260px;opacity:0;transition:opacity .08s;z-index:5}
-  #tip b{font-size:16px} #tip .k{color:#bbb}
-  .title{position:absolute;left:18px;bottom:16px;background:rgba(207,205,199,.92);padding:10px 16px;border-radius:4px}
-  .title h1{margin:0;font-size:28px;font-weight:700;letter-spacing:.3px}
-  .title p{margin:2px 0 0;font-size:14px;color:var(--muted)}
-  .zoomctl{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:6px}
-  .zoomctl button{width:34px;height:34px;border:none;border-radius:4px;background:var(--panel);font-size:20px;font-weight:700;cursor:pointer;color:var(--ink)}
-  .zoomctl button:hover{background:#bdbab3}
-  aside{background:var(--panel);padding:16px 16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;border-left:3px solid var(--frame)}
-  aside h2{margin:0 0 6px;font-size:20px}
-  .legend label{display:flex;align-items:center;gap:8px;font-size:16px;margin:4px 0;cursor:pointer}
-  .sw{width:18px;height:18px;border:1px solid #333;flex:none}
-  .legend .cnt{margin-left:auto;color:var(--muted);font-size:14px}
-  input[type=search]{width:100%;padding:8px 10px;font:inherit;font-size:15px;border:1px solid #999;border-radius:4px;background:#f4f3ef}
-  #results{list-style:none;margin:6px 0 0;padding:0;max-height:180px;overflow-y:auto}
-  #results li{padding:4px 6px;cursor:pointer;border-radius:3px;font-size:15px}
-  #results li:hover{background:#e6e4de}
-  .badge{display:inline-block;font-size:12px;padding:0 6px;border-radius:3px;color:#fff;margin-left:6px;vertical-align:1px}
-  .badge.City{background:var(--city)} .badge.Town{background:#139a9a} .badge.CDP{background:var(--cdp)} .badge.County{background:var(--county-line)} .badge.Twp{background:#4f7fae}
-  #detail{background:#e8e6df;border-radius:4px;padding:10px 12px;font-size:15px}
-  #detail h3{margin:0 0 4px;font-size:20px}
-  #detail .row{display:flex;justify-content:space-between;border-bottom:1px solid #d6d3cc;padding:3px 0}
-  #detail .links{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
-  #detail a.ext{display:inline-block;background:#1d3550;color:#fff;text-decoration:none;font-size:13.5px;padding:3px 9px;border-radius:3px}
-  #detail a.ext:hover{background:#2f5683}
-  #detail .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 8px}
-  #detail .stats div{background:#d9d6cf;border-radius:4px;padding:6px 8px;display:flex;flex-direction:column}
-  #detail .stats b{font-size:20px;line-height:1.1} #detail .stats span{font-size:12.5px;color:var(--muted)}
-  #detail .split{display:flex;height:14px;border-radius:3px;overflow:hidden;margin:6px 0 4px}
-  #detail .split .inc,#detail .splitkey i.inc{background:var(--city)} #detail .split .un,#detail .splitkey i.un{background:var(--twp)}
-  #detail .splitkey{display:flex;justify-content:space-between;font-size:12.5px;gap:6px}
-  #detail .splitkey i{display:inline-block;width:9px;height:9px;margin-right:4px;border-radius:2px}
-  #detail .fine{font-size:12.5px;color:var(--muted);margin:6px 0 0;line-height:1.35}
+  #tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;padding:8px 11px;border-radius:6px;font-size:13.5px;line-height:1.4;max-width:270px;opacity:0;transition:opacity .08s;z-index:6;box-shadow:0 4px 14px rgba(16,30,42,.25)}
+  #tip b{font-size:15px} #tip .k{color:#a9bac7}
+  /* floating map controls */
+  .mapbtns{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(16,30,42,.25);overflow:hidden;z-index:4}
+  .mapbtns button{width:36px;height:36px;border:none;background:#fff;font-size:19px;cursor:pointer;color:var(--ink)}
+  .mapbtns button+button{border-top:1px solid var(--line)}
+  .mapbtns button:hover{background:#eef2f5}
+  .layers{position:absolute;left:14px;top:14px;width:262px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(16,30,42,.25);z-index:4;font-size:14px}
+  .layers>button{width:100%;display:flex;align-items:center;gap:8px;border:none;background:none;padding:9px 12px;font-weight:700;font-size:14.5px;cursor:pointer;color:var(--ink)}
+  .layers>button::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .15s}
+  .layers.closed>button::after{transform:rotate(-45deg)}
+  .layers.closed .lbody{display:none}
+  .lbody{padding:2px 6px 8px;border-top:1px solid var(--line)}
+  .lbody label{display:flex;align-items:center;gap:9px;padding:5px 6px;border-radius:4px;cursor:pointer}
+  .lbody label:hover{background:#f1f4f6}
+  .lbody input[type=checkbox]{accent-color:var(--ink);margin:0}
+  .sw{width:14px;height:14px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.25)}
+  .lbody .cnt{margin-left:auto;color:var(--muted);font-size:12.5px}
+  .lbody hr{border:none;border-top:1px solid var(--line);margin:5px 4px}
+  .bm{position:absolute;left:14px;bottom:16px;display:flex;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:3px;z-index:4}
+  .bm label{position:relative;cursor:pointer}
+  .bm input{position:absolute;opacity:0;pointer-events:none}
+  .bm span{display:block;padding:6px 12px;border-radius:4px;font-size:13.5px;font-weight:600;color:var(--muted)}
+  .bm input:checked+span{background:var(--ink);color:#fff}
+  .bm input:focus-visible+span{outline:2px solid var(--flag);outline-offset:1px}
+  #attrib{position:absolute;right:0;bottom:0;font-size:10.5px;color:#333;background:rgba(255,255,255,.8);padding:1px 6px;border-top-left-radius:4px;z-index:3}
+  #attrib:empty{display:none} #attrib a{color:#333}
+  /* sidebar */
+  aside{background:var(--paper);border-left:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column}
+  #detail{padding:20px 22px 8px;font-size:14.5px;line-height:1.45}
+  #detail h3{margin:0 0 6px;font-size:23px;line-height:1.2;font-weight:800;letter-spacing:-.01em}
+  #detail h3 .badge{font-size:11.5px;vertical-align:4px}
+  #detail .kind{color:var(--muted);font-size:14px;margin:-2px 0 10px}
+  #detail .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:6px 0}
+  #detail .row span{color:var(--muted)} #detail .row b{font-weight:600;text-align:right}
+  #detail .links{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+  #detail a.ext{display:inline-block;border:1px solid var(--county-line);color:var(--county-line);text-decoration:none;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px}
+  #detail a.ext:hover{background:var(--county-line);color:#fff}
+  #detail .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin:10px 0 14px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  #detail .stats div{background:#fff;padding:9px 11px;display:flex;flex-direction:column}
+  #detail .stats b{font-size:21px;line-height:1.15;font-weight:700} #detail .stats span{font-size:12.5px;color:var(--muted)}
+  #detail h4{margin:18px 0 4px;font-size:15px;font-weight:700}
+  #detail .split{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0 6px}
+  #detail .split .inc,#detail .splitkey i.inc{background:var(--city)} #detail .split .un,#detail .splitkey i.un{background:var(--county)}
+  #detail .splitkey{display:flex;justify-content:space-between;font-size:12.5px;gap:6px;color:var(--muted)}
+  #detail .splitkey i{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:2px}
+  #detail .fine{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
   #detail .ptab{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
-  #detail .ptab td{padding:2px 0;border-bottom:1px solid #dcd9d2;cursor:pointer} #detail .ptab td:last-child{text-align:right;font-variant-numeric:tabular-nums}
-  #detail .ptab tr:hover td{background:#dedbd4}
-  #detail .seattag{font-size:11px;background:#1d3550;color:#fff;border-radius:3px;padding:0 4px;vertical-align:1px}
-  #detail h4{margin:10px 0 0;font-size:15px}
-  #results .k{color:var(--muted);font-size:13px}
-  #detail ul{margin:6px 0 0;padding-left:0;list-style:none;columns:2;column-gap:12px;font-size:14px}
-  #detail ul li{cursor:pointer;break-inside:avoid;padding:1px 0}
-  #detail ul li:hover{text-decoration:underline}
-  #detail a{color:var(--county-line)}
-  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
-  .note{font-size:13.5px;line-height:1.4;color:#333}
-  .note p{margin:0 0 7px}
-  .src{font-size:12px;color:var(--muted)}
+  #detail .ptab td{padding:4px 0;border-bottom:1px solid var(--line);cursor:pointer} #detail .ptab td:last-child{text-align:right;color:var(--muted)}
+  #detail .ptab tr:hover td{color:var(--county-line)}
+  #detail .seattag{font-size:11px;background:var(--ink);color:#fff;border-radius:3px;padding:0 5px;vertical-align:1px;margin-left:4px}
+  #detail ul{margin:6px 0 0;padding-left:0;list-style:none;columns:2;column-gap:14px;font-size:14px}
+  #detail ul li{cursor:pointer;break-inside:avoid;padding:2px 0}
+  #detail ul li:hover,#detail a:hover{color:var(--flag)}
+  #detail a{color:var(--county-line);text-underline-offset:2px}
+  #detail .hint{color:var(--muted);margin:12px 0 0}
+  .badge{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;color:#fff;margin-left:6px;vertical-align:1px;white-space:nowrap}
+  .badge.City{background:var(--city)} .badge.Town{background:#138d8d} .badge.CDP{background:#b8761a} .badge.County{background:var(--county-line)} .badge.Twp{background:#4f7fae}
+  #detail .pklist,#detail .hplist{columns:1}
+  #detail svg{width:11px;height:11px;display:inline;vertical-align:-1px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .about{margin:6px 22px 0;border-top:1px solid var(--line);padding:12px 0 4px}
+  .about summary{cursor:pointer;font-weight:700;font-size:14.5px;list-style:none;display:flex;align-items:center;gap:8px}
+  .about summary::-webkit-details-marker{display:none}
+  .about summary::before{content:"";width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+  .about[open] summary::before{transform:rotate(45deg)}
+  .about p{font-size:13.5px;line-height:1.5;margin:10px 0 0;color:#33424d;max-width:62ch}
+  .src{margin:auto 22px 0;padding:14px 0 18px;font-size:11.5px;line-height:1.5;color:var(--muted)}
   .src a{color:var(--muted)}
-  @media (max-width:820px){.wrap{grid-template-columns:1fr;grid-template-rows:60vh auto;overflow:auto}aside{border-left:none;border-top:3px solid var(--frame)}.title h1{font-size:20px}}
+  @media (max-width:860px){
+    .app{grid-template-columns:1fr;grid-template-rows:54px 58vh minmax(0,1fr)}
+    aside{border-left:none;border-top:1px solid var(--line)}
+    .search{width:auto;flex:1;max-width:none} .crumbs .hint{display:none}
+    .layers{width:210px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
+  <header class="bar">
+    <nav class="crumbs" aria-label="Location">
+      <button id="crumb-home" title="Show all of Arkansas"><span class="diamond" aria-hidden="true"></span>Arkansas</button>
+      <span class="sep x" aria-hidden="true">›</span><span id="ttl"></span>
+      <span class="hint">Counties, towns, townships and places</span>
+    </nav>
+    <div class="search">
+      <input type="search" id="q" placeholder="Find a county, town, park or landmark" autocomplete="off" aria-label="Search the map">
+      <ul id="results"></ul>
+    </div>
+  </header>
   <div id="map">
     <svg id="svg"></svg>
     <svg id="csvg"></svg>
     <canvas id="anim"></canvas>
-    <div id="insetwrap" title="Back to all of Arkansas"><svg id="inset" viewBox="0 0 160 130"></svg><span>Arkansas</span></div>
-    <div class="zoomctl"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Reset view">⟲</button></div>
-    <button id="back" class="back">← All of Arkansas</button>
-    <div class="title"><h1 id="ttl">Counties &amp; Places of Arkansas</h1><p id="sub">Hover to inspect · click a county to open its map · scroll or drag to pan</p></div>
+    <div class="layers" id="layers">
+      <button type="button" aria-expanded="true">Layers</button>
+      <div class="lbody">
+        <label><input type="checkbox" data-layer="City" checked><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
+        <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
+        <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-designated places<span class="cnt" id="n-CDP"></span></label>
+        <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:#3aa04a"></span>State parks<span class="cnt" id="n-Park"></span></label>
+        <label><input type="checkbox" data-layer="Hist" checked><span class="sw" style="background:#7b3fa0;border-radius:50%"></span>Historic places<span class="cnt" id="n-Hist"></span></label>
+        <hr>
+        <label><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships<span class="cnt" id="n-Twp"></span></label>
+        <label><input type="checkbox" data-layer="County" checked><span class="sw" style="background:#fff;border:2px solid var(--county-line)"></span>County lines<span class="cnt" id="n-County"></span></label>
+        <label><input type="checkbox" id="labels" checked><span class="sw" style="border:none;font-size:11px;font-weight:700;line-height:14px;text-align:center;color:var(--county-line)">Aa</span>County names</label>
+      </div>
+    </div>
+    <div class="mapbtns"><button id="zin" title="Zoom in" aria-label="Zoom in">+</button><button id="zout" title="Zoom out" aria-label="Zoom out">−</button><button id="zreset" title="Reset zoom" aria-label="Reset zoom">⟲</button></div>
+    <div class="bm" role="radiogroup" aria-label="Background">
+      <label><input type="radio" name="bm" value="none" checked><span>Plain</span></label>
+      <label><input type="radio" name="bm" value="osm"><span>Streets</span></label>
+      <label><input type="radio" name="bm" value="sat"><span>Satellite</span></label>
+    </div>
+    <div id="insetwrap" title="Back to all of Arkansas"><svg id="inset" viewBox="0 0 160 130"></svg><span>All of Arkansas</span></div>
     <div id="tip"></div>
     <div id="attrib"></div>
   </div>
   <aside>
-    <div class="legend">
-      <h2>Layers</h2>
-      <label><input type="checkbox" data-layer="County" checked><span class="sw" style="background:#fff;border:2px solid #1d3550"></span>County borders<span class="cnt" id="n-County"></span></label>
-      <label><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships (MCDs)<span class="cnt" id="n-Twp"></span></label>
-      <label><input type="checkbox" data-layer="City" checked><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
-      <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
-      <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-Designated Places<span class="cnt" id="n-CDP"></span></label>
-      <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:none;border:none"><svg width="18" height="18" viewBox="-9 -9 18 18"><rect x="-7" y="-7" width="14" height="14" rx="2" fill="#3aa04a" fill-opacity=".6" stroke="#1f6b2b"/></svg></span>State parks<span class="cnt" id="n-Park"></span></label>
-      <label><input type="checkbox" data-layer="Hist" checked><span class="sw" style="background:none;border:none;display:flex;align-items:center;justify-content:center"><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="#7b3fa0" stroke="#fff"/></svg></span>Historic places (NRHP)<span class="cnt" id="n-Hist"></span></label>
-      <div class="bmsel"><span>Background</span>
-        <label><input type="radio" name="bm" value="none" checked>None</label>
-        <label><input type="radio" name="bm" value="osm">Map</label>
-        <label><input type="radio" name="bm" value="sat">Satellite</label></div>
-      <label><input type="checkbox" id="labels" checked><span class="sw" style="background:#fff"></span>County labels</label>
-    </div>
-    <div>
-      <h2>Find</h2>
-      <input type="search" id="q" placeholder="County, township, city…" autocomplete="off">
-      <ul id="results"></ul>
-    </div>
-    <div id="detail"><h3>Arkansas</h3><div class="row"><span>Counties</span><b>75</b></div><div class="row"><span>Incorporated places</span><b id="d-inc"></b></div><div class="row"><span>Census-designated places</span><b id="d-cdp"></b></div><div class="row"><span>Townships (MCDs)</span><b id="d-twp"></b></div><p class="note" style="margin:8px 0 0">Click a county, township or place for details and links.</p></div>
-    <div class="note">
-      <h2>How Arkansas is divided</h2>
-      <p><b>Counties</b> are the main layer of local government. The <b>county judge</b> is the elected executive, not a judge in the usual sense. The <b>quorum court</b>, made up of justices of the peace, is the legislature. Both were set up by Amendment 55 (1974).</p>
-      <p><b>Cities and towns</b> are incorporated municipalities. The Census counts places of 500 or more people as cities and smaller ones as towns. <b>CDPs</b> are unincorporated communities that the Census defines only for statistics.</p>
-      <p><b>County seats</b> are where the courthouse and county offices sit. Ten Arkansas counties have two seats, mostly a holdover from when travel across the county was slow.</p>
-      <p><b>Townships</b> are Arkansas's minor civil divisions (MCDs). They have no government; today they mostly serve as constable election districts. County courts can merge or redraw them, which is why some counties (Benton, Calhoun, Crawford, Sebastian) now use numbered townships.</p>
-    </div>
-    <div class="src">Boundaries: U.S. Census Bureau TIGER/Line 2024 county subdivisions (townships; counties and state are built from these) and 2019 places. Shapes are simplified for the web. Links, populations (2020 Census), formation years and namesakes come from Wikidata. Quorum court size is the number set by state law for the county's population range; place-to-county assignment uses each place's center, so the city/county split is approximate.</div>
+    <div id="detail"><h3>Arkansas</h3><p class="kind">75 counties · 3,011,524 people (2020)</p><div class="row"><span>Cities and towns</span><b id="d-inc"></b></div><div class="row"><span>Census-designated places</span><b id="d-cdp"></b></div><div class="row"><span>Townships</span><b id="d-twp"></b></div><div class="row"><span>State parks</span><b id="d-park"></b></div><div class="row"><span>Historic places</span><b id="d-hist"></b></div><p class="hint">Click a county to open its map, or search for a place.</p></div>
+    <details class="about">
+      <summary>How local government works in Arkansas</summary>
+      <p><b>Counties</b> are the main layer of local government. The county judge is the elected executive, not a judge in the usual sense. The quorum court, made up of justices of the peace, is the legislature. Both were set up by Amendment 55 in 1974.</p>
+      <p><b>Cities and towns</b> are incorporated municipalities with their own mayor and council. The Census counts places of 500 or more people as cities and smaller ones as towns. <b>Census-designated places</b> are unincorporated communities defined only for statistics; the county governs them directly.</p>
+      <p><b>County seats</b> are where the courthouse and county offices sit. Ten counties have two seats, mostly a holdover from when travel across the county was slow.</p>
+      <p><b>Townships</b> are Arkansas's minor civil divisions. They have no government and today mostly serve as constable election districts. County courts can merge or redraw them, which is why Benton, Calhoun, Crawford and Sebastian counties now use numbered townships.</p>
+    </details>
+    <div class="src">Boundaries from U.S. Census Bureau TIGER/Line (townships 2024, places 2019), simplified for the web. Populations (2020 Census), links, seats, formation years and namesakes from Wikidata. Historic places from National Register listings on Wikidata. Park outlines from OpenStreetMap. Quorum court size is the number state law sets for the county's population range. Cities are assigned to the county containing their center, so the city/county population split is approximate.</div>
   </aside>
 </div>
 <script>// https://d3js.org v7.9.2 Copyright 2010-2026 Mike Bostock
@@ -242,6 +300,7 @@ document.getElementById("n-County").textContent=counties.length;
 document.getElementById("d-inc").textContent=typeCount("City")+typeCount("Town");
 document.getElementById("d-cdp").textContent=typeCount("CDP");
 document.getElementById("d-twp").textContent=fmt(twps.length);
+document.getElementById("d-park").textContent=TOPO.parks.length; document.getElementById("d-hist").textContent=fmt(TOPO.hist.length);
 const typeName = {City:"City",Town:"Town",CDP:"Census-designated place"};
 const cName = cf => CN[cf]+" County";
 
@@ -315,6 +374,7 @@ const zoom = d3.zoom().scaleExtent([1,60]).on("start",()=>svg.classed("moving",t
 svg.call(zoom).on("click",()=>{pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();});
 
 let W,H;
+function fitBox(){const open=!document.getElementById("layers").classList.contains("closed") && W>860; const L=open?292:28; return [[L,36],[W-70,H-74]];}
 
 /* ---------- Background map tiles (Map = OpenStreetMap, Satellite = Esri World Imagery) ---------- */
 const BASEMAPS={
@@ -339,7 +399,7 @@ function setBasemap(v){basemap=v; mapEl.classList.remove("bm-osm","bm-sat"); if(
 document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasemap(r.value));
 
 function layout(){W=mapEl.clientWidth;H=mapEl.clientHeight;P2=null;
-  proj.fitExtent([[24,24],[W-24,H-90]],stateF);
+  proj.fitExtent(fitBox(),stateF);
   [cSel,tSel,pSel,bSel,sSel].forEach(s=>s.attr("d",path)); pkASel.attr("d",d=>path(d.geo));
   hpSel.attr("cx",d=>proj(d.ll)[0]).attr("cy",d=>proj(d.ll)[1]); sizeHist(d3.zoomTransform(svg.node()).k); sClip.attr("d",path(stateF)); placeParks(pkSel,proj,d3.zoomTransform(svg.node()).k);
   lSel.attr("x",d=>path.centroid(d)[0]).attr("y",d=>path.centroid(d)[1]+4);
@@ -358,7 +418,7 @@ const countyHooks=[]; // per-county layers plug in here: countyHooks.push((cf, c
 function renderCounty(cf){
   const C=countyBy[cf];
   cg.selectAll("*").remove(); cdefs.selectAll("*").remove();
-  cproj.fitExtent([[40,40],[W-40,H-110]],C);
+  cproj.fitExtent(fitBox(),C);
   cdefs.append("clipPath").attr("id","cclip").append("path").attr("d",cpath(C));
   cdefs.append("clipPath").attr("id","ctclip").append("path").attr("d",cpath(C));
   cg.append("path").datum(C).attr("class","c-base").attr("d",cpath)
@@ -425,12 +485,13 @@ function drawInset(){inset.selectAll("*").remove(); if(!openCF) return;
   inset.append("path").datum(stateF).attr("d",ipath).attr("class","i-s");}
 document.getElementById("insetwrap").onclick=()=>closeCounty();
 
-function countyTransform(cf){const [[x0,y0],[x1,y1]]=path.bounds(countyBy[cf]);
-  const k=Math.min((W-80)/(x1-x0),(H-150)/(y1-y0)), cx=W/2, cy=(40+H-110)/2;
+function countyTransform(cf){const [[x0,y0],[x1,y1]]=path.bounds(countyBy[cf]); const [[bx0,by0],[bx1,by1]]=fitBox();
+  const k=Math.min((bx1-bx0)/(x1-x0),(by1-by0)/(y1-y0)), cx=(bx0+bx1)/2, cy=(by0+by1)/2;
   return d3.zoomIdentity.translate(cx-k*(x0+x1)/2, cy-k*(y0+y1)/2).scale(k);}
 function setTitles(cf){
-  document.getElementById("ttl").textContent=cf?CN[cf]+" County":"Counties & Places of Arkansas";
-  document.getElementById("sub").textContent=cf?"County seat: "+seatsOf(cf).map(p=>p.properties.n).join(" & ")+" · click a place for details · Esc or ← to return":"Hover to inspect · click a county to open its map · scroll or drag to pan";}
+  document.getElementById("ttl").textContent=cf?CN[cf]+" County":"";
+  document.querySelector(".app").classList.toggle("cv",!!cf);
+  document.title=cf?CN[cf]+" County · Arkansas map":"Arkansas Counties & Places";}
 
 /* Fast transition: the zoom is drawn on a canvas from cached Path2D shapes (cheap per frame),
    instead of re-rendering ~1,700 SVG paths on every frame. */
@@ -462,12 +523,12 @@ function drawFrame(T,cf,fade){const dpr=window.devicePixelRatio||1;
 function animateView(from,to,cf,fadeFrom,fadeTo,ms,done){
   const dpr=window.devicePixelRatio||1; canvas.width=W*dpr; canvas.height=H*dpr; canvas.style.width=W+"px"; canvas.style.height=H+"px";
   if(!P2) buildShapes();
-  const ay=(40+H-110)/2, view=T=>{const c=T.invert([W/2,ay]);return [c[0],c[1],W/T.k];};
+  const [[fx0,fy0],[fx1,fy1]]=fitBox(), ax=(fx0+fx1)/2, ay=(fy0+fy1)/2, view=T=>{const c=T.invert([ax,ay]);return [c[0],c[1],W/T.k];};
   const iz=d3.interpolateZoom(view(from),view(to)), dur=Math.max(ms, Math.min(1100, iz.duration*0.6));
   mapEl.classList.add("animating"); hideTip();
   const t0=performance.now();
   (function step(now){let u=Math.min(1,(now-t0)/dur), e=d3.easeCubicInOut(u);
-    const [x,y,w]=iz(e), k=W/w; drawFrame(d3.zoomIdentity.translate(W/2-x*k,ay-y*k).scale(k),cf,fadeFrom+(fadeTo-fadeFrom)*e);
+    const [x,y,w]=iz(e), k=W/w; drawFrame(d3.zoomIdentity.translate(ax-x*k,ay-y*k).scale(k),cf,fadeFrom+(fadeTo-fadeFrom)*e);
     if(u<1) requestAnimationFrame(step); else {mapEl.classList.remove("animating"); done&&done();}})(t0);}
 
 let animating=false;
@@ -587,7 +648,10 @@ const activeZoom=()=>openCF?[csvg,czoom]:[svg,zoom];
 document.getElementById("zin").onclick=()=>{const [s,z]=activeZoom();s.transition().call(z.scaleBy,1.6);};
 document.getElementById("zout").onclick=()=>{const [s,z]=activeZoom();s.transition().call(z.scaleBy,1/1.6);};
 document.getElementById("zreset").onclick=()=>{const [s,z]=activeZoom();s.transition().duration(500).call(z.transform,d3.zoomIdentity);};
-document.getElementById("back").onclick=e=>{e.stopPropagation();closeCounty();};
+document.getElementById("crumb-home").onclick=e=>{e.stopPropagation(); if(openCF) closeCounty(); else {svg.transition().duration(500).call(zoom.transform,d3.zoomIdentity); pSel.classed("hi",false);tSel.classed("hi",false);resetDetail();}};
+const layersEl=document.getElementById("layers"), layersBtn=layersEl.querySelector("button");
+layersBtn.onclick=()=>{const c=layersEl.classList.toggle("closed"); layersBtn.setAttribute("aria-expanded",String(!c)); layout();};
+if(window.matchMedia("(max-width:860px)").matches){layersEl.classList.add("closed");layersBtn.setAttribute("aria-expanded","false");}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&openCF) closeCounty();});
 
 const index=[...counties.map(c=>({n:c.properties.n+" County",t:"County",f:c})),
@@ -599,8 +663,12 @@ const q=document.getElementById("q"), res=document.getElementById("results");
 q.oninput=()=>{const s=q.value.trim().toLowerCase(); if(!s){res.innerHTML="";return;}
   const hits=index.filter(i=>i.n.toLowerCase().includes(s)).sort((a,b)=>a.n.toLowerCase().indexOf(s)-b.n.toLowerCase().indexOf(s)||a.n.localeCompare(b.n)).slice(0,40);
   res.innerHTML=hits.map((h,i)=>`<li data-i="${i}">${h.n}${h.sub?` <span class=k>(${h.sub})</span>`:""}<span class="badge ${h.t}">${h.t==="Twp"?"MCD":h.t==="Park"?"State park":h.t==="Hist"?"Historic":h.t}</span></li>`).join("")||"<li>No matches</li>";
-  res.querySelectorAll("li[data-i]").forEach(li=>li.onclick=()=>{const h=hits[+li.dataset.i];
+  res.querySelectorAll("li[data-i]").forEach(li=>li.onclick=()=>{const h=hits[+li.dataset.i]; res.innerHTML=""; q.blur();
     h.t==="County"?selectCounty(h.f):h.t==="Twp"?selectTwp(h.f,true):h.t==="Park"?selectPark(h.f):h.t==="Hist"?selectHist(h.f):selectPlace(h.f,true);});};
+
+q.onkeydown=e=>{if(e.key==="Escape"){res.innerHTML="";q.blur();e.stopPropagation();} if(e.key==="Enter"){const f=res.querySelector("li[data-i]"); if(f) f.click();}};
+document.addEventListener("click",e=>{if(!e.target.closest(".search")) res.innerHTML="";});
+q.onfocus=()=>{if(q.value.trim()) q.oninput();};
 </script>
 </body>
 </html>
