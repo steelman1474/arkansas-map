@@ -348,8 +348,14 @@
 </div>
 <script>/*D3*/</script>
 <script>/*TOPO*/</script>
-<script>/*MAPLIBRE*/</script>
-<script>
+<!-- MapLibre 6 ships only as ES modules (library + separate worker). Both are inlined as plain text and loaded from
+     in-memory blob URLs so index.html stays self-contained. -->
+<script type="text/plain" id="maplibre-src">/*MAPLIBRE*/</script>
+<script type="text/plain" id="maplibre-worker-src">/*MAPLIBREWORKER*/</script>
+<script type="module">
+const blobUrl = id => URL.createObjectURL(new Blob([document.getElementById(id).textContent], {type: "text/javascript"}));
+const maplibregl = await import(blobUrl("maplibre-src"));
+maplibregl.setWorkerUrl(blobUrl("maplibre-worker-src"));
 const TOPO = /*DATA*/;
 /*APP*/
 </script>
