@@ -74,8 +74,6 @@
   .c-nature .sel{stroke:var(--flag)!important;stroke-width:2.6px!important}
   .c-nature .river.sel{stroke-opacity:1}
   .shade image{mix-blend-mode:multiply;opacity:.5;pointer-events:none}
-  .c-flood image{pointer-events:none;opacity:.75}
-  #map.hide-Flood .c-flood{display:none}
   #map.hide-Water .river,#map.hide-Water .lake{display:none}
   #map.hide-NF .L-NF,#map.hide-NPW .L-NPW,#map.hide-WMA .L-WMA,#map.hide-WN .L-WN,#map.hide-LP .L-LP,#map.hide-MIL .L-MIL{display:none}
   #map.hide-Terrain .shade{display:none}
@@ -307,7 +305,6 @@
         <label><input type="checkbox" data-layer="LP"><span class="sw" style="background:#8fd18a"></span>City &amp; county parks</label>
         <label><input type="checkbox" data-layer="MIL"><span class="sw" style="background:#9a9a8a"></span>Military land</label>
         <label><input type="checkbox" data-layer="Terrain"><span class="sw" style="background:linear-gradient(135deg,#fff,#7d8790)"></span>Terrain shading</label>
-        <label><input type="checkbox" data-layer="Flood"><span class="sw" style="background:repeating-linear-gradient(45deg,#3b7dd8 0 3px,#bcd4f4 3px 6px)"></span>Flood zones</label>
         <hr>
         <label class="rd"><input type="checkbox" data-layer="Hwy" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 4px no-repeat,#f2c14e;border-color:#8a6d1f"></span>Highways</label>
         <label class="rd"><input type="checkbox" data-layer="Road"><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 2px no-repeat,var(--county)"></span>County &amp; local roads</label>
@@ -470,7 +467,7 @@ const reorient = f => { if(d3.geoArea(f)>2*Math.PI){const g=f.geometry; if(g.typ
 
 const mapEl = document.getElementById("map"), tip = d3.select("#tip");
 const BG = "#eef1f3";
-mapEl.classList.add("hide-Twp","hide-Hist","hide-Road","hide-WN","hide-LP","hide-MIL","hide-Terrain","hide-Flood");
+mapEl.classList.add("hide-Twp","hide-Hist","hide-Road","hide-WN","hide-LP","hide-MIL","hide-Terrain");
 const isOn = k => !mapEl.classList.contains("hide-"+k);
 
 /* ---------- the map ---------- */
@@ -522,11 +519,9 @@ map.on("load", () => {
   map.addSource("counties",{type:"geojson",data:FC(counties.map((c,i)=>feat(c.geometry,{cf:c.properties.cf,n:c.properties.n,_i:i},i)))});
   map.addLayer({id:"counties-fill",type:"fill",source:"counties",paint:{"fill-color":["case",["boolean",["feature-state","hover"],false],"#6fa6db","#9ec3e6"],"fill-opacity":1}});
 
-  /* terrain and flood pictures */
+  /* terrain shading picture */
   map.addSource("shade",{type:"raster",tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:15});
   add({id:"shade",type:"raster",source:"shade",paint:{"raster-opacity":0.4,"raster-contrast":0.15}}, ()=>isOn("Terrain"));
-  map.addSource("flood",{type:"raster",tileSize:512,tiles:[`https://gis.arkansas.gov/arcgis/rest/services/FEATURESERVICES/Water/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=png32&transparent=true&dynamicLayers=${FLOOD_DL}&f=image`]});
-  add({id:"flood",type:"raster",source:"flood",paint:{"raster-opacity":0.8}}, ()=>isOn("Flood"));
 
   /* land and water */
   map.addSource("nat-areas",{type:"geojson",data:EMPTY,tolerance:0.5});
@@ -799,11 +794,6 @@ function selectWater(d,kind,cf){const P=d.properties;
   }
   wire();}
 
-/* Flood hazard areas (FEMA flood maps as published by the Arkansas GIS Office): only the "special flood hazard area"
-   zones (the 100-year floodplain: zones A, AE, AO, AH, VE) */
-const FLOOD_DL=encodeURIComponent(JSON.stringify([{id:21,source:{type:"mapLayer",mapLayerId:21},definitionExpression:"sfha_tf='T'",
-  drawingInfo:{renderer:{type:"simple",symbol:{type:"esriSFS",style:"esriSFSBackwardDiagonal",color:[20,50,120,230],outline:{type:"esriSLS",style:"esriSLSSolid",color:[20,50,120,230],width:0.6}}}}}]));
-
 /* ---------- tooltips ---------- */
 function countyTip(d){const a=placesByC[d.properties.cf]; const se=seatsOf(d.properties.cf);
   return `<b>${d.properties.n} County</b><br><span class=k>Population</span> ${fmt(CI[d.properties.cf][0])}<br>Seat: ${se.map(p=>p.properties.n).join(" & ")}<br>${cnt(a,"City")} cities · ${cnt(a,"Town")} towns · ${cnt(a,"CDP")} CDPs<br><span class=k>Click to open the county map</span>`;}
@@ -886,7 +876,7 @@ function setBasemap(v){basemap=v; mapEl.classList.remove("bm-osm","bm-sat"); if(
   map.setPaintProperty("park-lbl","text-color",sat?"#d6ffd9":"#1d5c27"); map.setPaintProperty("hist-lbl","text-color",sat?"#f0d9ff":"#4a1f63");
   map.setPaintProperty("twp-lbl","text-color",sat?"#dbeaff":"#1f4a75");
   updateAttrib(); refreshVis();}
-function updateAttrib(){const a=[]; if(basemap!=="none") a.push(ATTR[basemap]); if(isOn("Terrain")) a.push("Terrain © Esri"); if(isOn("Flood")) a.push("Flood zones: FEMA via Arkansas GIS Office");
+function updateAttrib(){const a=[]; if(basemap!=="none") a.push(ATTR[basemap]); if(isOn("Terrain")) a.push("Terrain © Esri");
   document.getElementById("attrib").innerHTML=a.join(" · ");}
 document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasemap(r.value));
 

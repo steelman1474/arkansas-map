@@ -53,5 +53,4 @@ Requires Node.js (https://nodejs.org).
 - Forests, national parks, refuges, wilderness, natural areas, military land and local parks: ArDOT Public Lands layer
 - Wildlife management areas: Arkansas Game and Fish Commission via the Arkansas GIS Office
 - Terrain shading: Esri World Hillshade, loaded live
-- Flood zones: FEMA flood maps (special flood hazard areas) from the Arkansas GIS Office, loaded live
 - Quorum court size: Arkansas Code § 14-14-402 population ranges

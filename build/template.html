@@ -74,8 +74,6 @@
   .c-nature .sel{stroke:var(--flag)!important;stroke-width:2.6px!important}
   .c-nature .river.sel{stroke-opacity:1}
   .shade image{mix-blend-mode:multiply;opacity:.5;pointer-events:none}
-  .c-flood image{pointer-events:none;opacity:.75}
-  #map.hide-Flood .c-flood{display:none}
   #map.hide-Water .river,#map.hide-Water .lake{display:none}
   #map.hide-NF .L-NF,#map.hide-NPW .L-NPW,#map.hide-WMA .L-WMA,#map.hide-WN .L-WN,#map.hide-LP .L-LP,#map.hide-MIL .L-MIL{display:none}
   #map.hide-Terrain .shade{display:none}
@@ -307,7 +305,6 @@
         <label><input type="checkbox" data-layer="LP"><span class="sw" style="background:#8fd18a"></span>City &amp; county parks</label>
         <label><input type="checkbox" data-layer="MIL"><span class="sw" style="background:#9a9a8a"></span>Military land</label>
         <label><input type="checkbox" data-layer="Terrain"><span class="sw" style="background:linear-gradient(135deg,#fff,#7d8790)"></span>Terrain shading</label>
-        <label><input type="checkbox" data-layer="Flood"><span class="sw" style="background:repeating-linear-gradient(45deg,#3b7dd8 0 3px,#bcd4f4 3px 6px)"></span>Flood zones</label>
         <hr>
         <label class="rd"><input type="checkbox" data-layer="Hwy" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 4px no-repeat,#f2c14e;border-color:#8a6d1f"></span>Highways</label>
         <label class="rd"><input type="checkbox" data-layer="Road"><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 2px no-repeat,var(--county)"></span>County &amp; local roads</label>
