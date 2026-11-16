@@ -605,7 +605,16 @@ const syncLayerBoxes=()=>document.querySelectorAll("[data-layer]").forEach(cb=>{
 syncLayerBoxes(); window.addEventListener("pageshow",syncLayerBoxes);
 document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>{mapEl.classList.toggle("hide-"+cb.dataset.layer,!cb.checked);
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); }});
-document.getElementById("labels").onchange=e=>{labelsOn=e.target.checked; if(map.getLayer("clabels")) refreshVis();};
+document.getElementById("labels").onchange=e=>{labelsOn=e.target.checked; if(map.getLayer("clabels")) refreshVis(); updateAllBtn();};
+/* one button that turns every layer on, or every layer off */
+const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers input[type=checkbox]")];
+function updateAllBtn(){allBtn.textContent=allBoxes().every(cb=>cb.checked)?"Deselect all":"Select all";}
+allBtn.onclick=()=>{const on=!allBoxes().every(cb=>cb.checked);
+  allBoxes().forEach(cb=>{cb.checked=on; if(cb.dataset.layer) mapEl.classList.toggle("hide-"+cb.dataset.layer,!on);});
+  labelsOn=document.getElementById("labels").checked;
+  if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); } updateAllBtn();};
+document.querySelectorAll("#layers [data-layer]").forEach(cb=>cb.addEventListener("change",updateAllBtn));
+updateAllBtn(); window.addEventListener("pageshow",updateAllBtn);
 document.getElementById("zin").onclick=()=>map.zoomIn();
 document.getElementById("zout").onclick=()=>map.zoomOut();
 document.getElementById("zreset").onclick=()=>openCF?fitCounty(openCF,{duration:600}):map.fitBounds(stateBox,flyOpts({duration:600}));

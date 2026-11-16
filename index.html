@@ -194,6 +194,8 @@
   .layers>button::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .15s}
   .layers.closed>button::after{transform:rotate(-45deg)}
   .layers.closed .lbody{display:none}
+  .allbtn{display:block;margin:0 0 4px auto;border:1px solid var(--line,#d5dde4);background:#f4f7f9;border-radius:7px;padding:3px 10px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer}
+  .allbtn:hover{background:#e6edf2} .allbtn:focus-visible{outline:2px solid #2e6db4;outline-offset:1px}
   .lbody{padding:2px 6px 8px;border-top:1px solid var(--line)}
   .lbody label{display:flex;align-items:center;gap:9px;padding:5px 6px;border-radius:4px;cursor:pointer}
   .lbody label:hover{background:#f1f4f6}
@@ -290,6 +292,7 @@
     <div class="layers" id="layers">
       <button type="button" aria-expanded="true">Layers</button>
       <div class="lbody">
+        <button type="button" class="allbtn" id="allbtn">Deselect all</button>
         <label><input type="checkbox" data-layer="City" checked><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
         <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
         <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-designated places<span class="cnt" id="n-CDP"></span></label>
@@ -1020,7 +1023,16 @@ const syncLayerBoxes=()=>document.querySelectorAll("[data-layer]").forEach(cb=>{
 syncLayerBoxes(); window.addEventListener("pageshow",syncLayerBoxes);
 document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>{mapEl.classList.toggle("hide-"+cb.dataset.layer,!cb.checked);
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); }});
-document.getElementById("labels").onchange=e=>{labelsOn=e.target.checked; if(map.getLayer("clabels")) refreshVis();};
+document.getElementById("labels").onchange=e=>{labelsOn=e.target.checked; if(map.getLayer("clabels")) refreshVis(); updateAllBtn();};
+/* one button that turns every layer on, or every layer off */
+const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers input[type=checkbox]")];
+function updateAllBtn(){allBtn.textContent=allBoxes().every(cb=>cb.checked)?"Deselect all":"Select all";}
+allBtn.onclick=()=>{const on=!allBoxes().every(cb=>cb.checked);
+  allBoxes().forEach(cb=>{cb.checked=on; if(cb.dataset.layer) mapEl.classList.toggle("hide-"+cb.dataset.layer,!on);});
+  labelsOn=document.getElementById("labels").checked;
+  if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); } updateAllBtn();};
+document.querySelectorAll("#layers [data-layer]").forEach(cb=>cb.addEventListener("change",updateAllBtn));
+updateAllBtn(); window.addEventListener("pageshow",updateAllBtn);
 document.getElementById("zin").onclick=()=>map.zoomIn();
 document.getElementById("zout").onclick=()=>map.zoomOut();
 document.getElementById("zreset").onclick=()=>openCF?fitCounty(openCF,{duration:600}):map.fitBounds(stateBox,flyOpts({duration:600}));
