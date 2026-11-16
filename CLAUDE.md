@@ -37,11 +37,14 @@ in about a minute).
 ## Data sources and how they were fetched
 See README.md "Sources". Most of it came from Census TIGER/Line, Wikidata (SPARQL), the Arkansas GIS Office ArcGIS
 services (gis.arkansas.gov: Water, Boundaries, roads), ArDOT public lands, Nominatim/OpenStreetMap, Wikipedia's API.
-Rebuild scripts: `build/acf_roads.py` (county roads), `build/roads.sh` (highways), `build/nature.py` (land and water;
+Highways come from OpenStreetMap route relations (Overpass API), not Census TIGER: TIGER keeps stale route names and
+misses shared stretches. Steps are at the top of `build/highways.mjs`; bump `highways.topo.json?v=` in `app.js` after.
+Rebuild scripts: `build/acf_roads.py` (county roads), `build/highways.mjs` (highways), `build/nature.py` (land and water;
 needs the raw downloads, which aren't in the repo).
 
 ## Testing
-Serve the folder (`python3 -m http.server 8765`) and open it in a browser; headless Playwright needs WebGL flags
+Serve the folder (`python3 -m http.server 8765`) and open it in a browser. The app runs as an ES module (MapLibre 6 is
+module-only), so its variables aren't global; `window.arDebug` exposes `map`, `HWY` and `keyTiger` for console checks; headless Playwright needs WebGL flags
 (`--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`). Check the console for errors and click
 through a few counties (Pulaski is the heaviest; Faulkner and Newton are good checks).
 

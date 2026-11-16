@@ -63,6 +63,8 @@ const map = new maplibregl.Map({container:"gl", attributionControl:false, dragRo
   maxZoom:18, fadeDuration:120, bounds:stateBox, fitBoundsOptions:{padding:padFor()},
   style:{version:8, glyphs, sources:{}, layers:[{id:"bg",type:"background",paint:{"background-color":BG}}]}});
 map.touchZoomRotate.disableRotation(); map.keyboard.disableRotation();
+// for testing from the browser console (the app runs as a module, so its variables aren't global)
+window.arDebug={map,get HWY(){return HWY},get HWY_GROUPS(){return HWY_GROUPS},keyTiger:P=>keyTiger(P)};
 let stateZoom = null;
 
 const R = "Noto Sans Regular", M = "Noto Sans Medium", IT = "Noto Sans Italic";
@@ -213,12 +215,56 @@ function triangle(fill,stroke){const s=28, c=document.createElement("canvas"); c
 function labelPoint(p){ if(p.geo){ const c=d3.geoCentroid({type:"Feature",geometry:p.geo}); if(d3.geoContains({type:"Feature",geometry:p.geo},c)) return c; } return p.ll; }
 
 /* ---------- highways and county roads ---------- */
-let HWY=null;
+let HWY=null, HWY_GROUPS=null; // HWY: one feature per route; HWY_GROUPS[routeIndex]: ids of the drawn pieces it runs on
 const hwyName=d=>{const n=d.properties.n||""; return n.replace(/^I- ?/,"Interstate ").replace(/^US Hwy/,"U.S. Highway").replace(/^State Hwy/,"Highway")||"Highway";};
-function loadHighways(){ fetch("data/web/highways.topo.json").then(r=>r.json()).then(tj=>{HWY=topojson.feature(tj,tj.objects[Object.keys(tj.objects)[0]]).features;
-  HWY.forEach((h,i)=>h.properties._i=i);
-  map.getSource("hwy").setData(FC(HWY.map((h,i)=>feat(h.geometry,{k:h.properties.k,_i:i},i))));
+function loadHighways(){ fetch("data/web/highways.topo.json?v=2").then(r=>r.json()).then(tj=>{
+  const B=buildHighways(tj); HWY=B.routes; HWY_GROUPS=B.groupsOf;
+  map.getSource("hwy").setData(FC(B.pieces));
   if(openCF) loadCountyRoads(openCF);}).catch(e=>console.error("highways failed:",e)); }
+/* Highways come from OpenStreetMap routes (build/highways.mjs), so a road two routes share (e.g. U.S. 62 and U.S. 412
+   near Harrison) is in both. The map draws each stretch of road once, styled as its most important route, instead of
+   stacking a copy per route; selecting a route still highlights all of it. */
+const HWY_RANK={I:3,U:2,S:1};
+function buildHighways(tj){
+  const obj=tj.objects[Object.keys(tj.objects)[0]], arcsOf=g=>g.type==="LineString"?[g.arcs]:g.type==="MultiLineString"?g.arcs:[];
+  const byKey=new Map(), routes=[];
+  for(const g of obj.geometries){ const P=g.properties, key=keyTiger(P)||"?"+P.n;
+    let r=byKey.get(key); if(!r){ byKey.set(key,r={key,k:P.k,n:P.n,arcs:new Set(),extra:[]}); routes.push(r); }
+    for(const L of arcsOf(g)) for(const a of L) r.arcs.add(a<0?~a:a); }
+  const line=i=>topojson.feature(tj,{type:"LineString",arcs:[i]}).geometry.coordinates, M=6371008.8, A=[];
+  for(const r of routes) for(const i of r.arcs) if(!A[i]){ const c=line(i); A[i]={c,len:d3.geoLength({type:"LineString",coordinates:c})*M}; }
+  // hairline breaks (under 100 m) where two pieces of a route don't quite meet after simplifying: join them
+  for(const r of routes){ const deg=new Map(), parent=new Map(), find=x=>{while(parent.get(x)!==x)x=parent.get(x);return x;};
+    for(const i of r.arcs){ const c=A[i].c, a=c[0]+"", b=c[c.length-1]+"";
+      for(const n of [a,b]){ if(!parent.has(n)) parent.set(n,n); deg.set(n,(deg.get(n)||0)+1); } parent.set(find(a),find(b)); }
+    const ends=[...deg].filter(([,d])=>d===1).map(([n])=>n);
+    for(let x=0;x<ends.length;x++) for(let y=x+1;y<ends.length;y++){ const p=ends[x].split(",").map(Number), q=ends[y].split(",").map(Number);
+      if(find(ends[x])!==find(ends[y])&&d3.geoDistance(p,q)*M<100){ r.extra.push([p,q]); parent.set(find(ends[x]),find(ends[y])); } } }
+  // one route feature each (for selecting), and one drawn piece per set of routes sharing a stretch
+  const onArc=new Map();
+  routes.forEach((r,ri)=>{ for(const i of r.arcs){ if(!onArc.has(i)) onArc.set(i,[]); onArc.get(i).push(ri); } });
+  const top=ris=>ris.slice().sort((x,y)=>HWY_RANK[routes[y].k]-HWY_RANK[routes[x].k]||((parseInt(routes[x].key.slice(1))||0)-(parseInt(routes[y].key.slice(1))||0)))[0];
+  const mesh=arcs=>topojson.mesh(tj,{type:"GeometryCollection",geometries:arcs.map(i=>({type:"LineString",arcs:[i]}))}).coordinates;
+  const groups=new Map();
+  for(const [i,ris] of onArc){ const sig=ris.slice().sort((x,y)=>x-y).join(","); if(!groups.has(sig)) groups.set(sig,{ris,arcs:[],lines:[]}); groups.get(sig).arcs.push(i); }
+  routes.forEach((r,ri)=>{ if(r.extra.length){ const sig=String(ri); if(!groups.has(sig)) groups.set(sig,{ris:[ri],arcs:[],lines:[]}); groups.get(sig).lines.push(...r.extra); } });
+  const pieces=[], groupsOf=routes.map(()=>[]);
+  for(const g of groups.values()){ const p=top(g.ris), gid=pieces.length;
+    pieces.push(feat({type:"MultiLineString",coordinates:[...(g.arcs.length?mesh(g.arcs):[]),...g.lines]},{k:routes[p].k,_i:p},gid));
+    g.ris.forEach(ri=>groupsOf[ri].push(gid)); }
+  const feats=routes.map((r,ri)=>{ const shared=new Map();
+    for(const i of r.arcs) for(const o of onArc.get(i)) if(o!==ri){ if(!shared.has(o)) shared.set(o,[]); shared.get(o).push(i); }
+    return {type:"Feature",properties:{n:r.n,k:r.k,_i:ri,
+        // routes sharing part of this one's road, with a sample point on each shared arc (to tell which county it's in)
+        // (stretches under 300 m are just where two lines touch at a junction, not a shared road)
+        shared:[...shared].map(([o,arcs])=>({ri:o,m:d3.sum(arcs,i=>A[i].len),pts:arcs.map(i=>A[i].c[Math.floor(A[i].c.length/2)])})).filter(x=>x.m>=300)},
+      geometry:{type:"MultiLineString",coordinates:[...mesh([...r.arcs]),...r.extra]}}; });
+  return {routes:feats,pieces,groupsOf};}
+// "Runs together with" row for a route's detail panel; cf limits it to stretches inside that county
+function sharedRow(d,cf){ const C=cf&&countyBy[cf];
+  const os=(d.properties.shared||[]).filter(s=>!C||s.pts.some(p=>d3.geoContains(C,p))).map(s=>HWY[s.ri]).filter(o=>keyTiger(o.properties));
+  if(!os.length) return "";
+  return row("Runs together with",os.sort((x,y)=>HWY_RANK[y.properties.k]-HWY_RANK[x.properties.k]).map(o=>`<a href="#" data-hwy="${o.properties._i}">${keyTitle(keyTiger(o.properties))}</a>`).join(", "));}
 const roadCache={}, roadPrep={};
 const hwyKind=r=>/^Interstate/.test(r)?"I":/^U\.S\./.test(r)?"U":"S";
 let ROADS=[], NEAR=[];
@@ -276,7 +322,7 @@ function selectHighway(k,cf,seg){ if(!k) return;
   const ed=S&&S.ed&&S.ed.length===8?`${S.ed.slice(4,6)}/${S.ed.slice(6,8)}/${S.ed.slice(0,4)}`:"";
   det().innerHTML=hero("Highway","Hwy",keyTitle(k),wt?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(wt),"Wikipedia: route history")}</div>`:"",`${keyKind(k)} · ${cLink(cf)} County`)+
     stat(miles<0.1?Math.round(miles*5280)+" ft":miles.toFixed(1)+" mi","in "+CN[cf]+" County","accent")+stat("ArDOT",dist.length?"District "+dist.join(", "):"maintains it")+
-    rows("Route in this county",row("Maintained by","Arkansas Department of Transportation")+(towns.length?row("Passes through",towns.join(", ")):""))+
+    rows("Route in this county",row("Maintained by","Arkansas Department of Transportation")+(towns.length?row("Passes through",towns.join(", ")):"")+(lines[0]?sharedRow(lines[0],cf):""))+
     (S?rows("The stretch you clicked",(S.n?row("Local name",S.n):"")+(S.s?row("Surface",S.s):"")+(S.d?row("Road type",S.d):"")+(S.at>0?row("Addresses",`${fmt(S.af)}–${fmt(S.at)}`):"")+(S.z?row("ZIP code",S.z):"")+(ed?row("Last updated in state road file",ed):"")):"")+
     tile("span2 note","Build dates aren't recorded in the road data. The Wikipedia article covers when this route was designated and how it has changed.");
   wire();}
@@ -312,6 +358,7 @@ function selectTigerHwy(d){const P=d.properties, k=keyTiger(P), name=k?keyTitle(
   highlight(k?HWY.filter(h=>keyTiger(h.properties)===k):[d],"line");
   det().innerHTML=hero("Highway","Hwy",name,wt?`<div class="links">${ext("https://en.wikipedia.org/w/index.php?search="+encodeURIComponent(wt),"Wikipedia: route history")}</div>`:"",({I:"Interstate",U:"U.S. highway",S:"State highway"})[P.k])+
     stat("ArDOT","maintains state, U.S. and Interstate highways in Arkansas","accent span2")+
+    (sharedRow(d)?rows("Route",sharedRow(d)):"")+
     tile("span2 note","Open a county to click individual stretches of road and see their surface, district and address details.");
   wire();}
 
@@ -400,7 +447,7 @@ function hideTip(){tip.style("opacity",0);}
 const PICK = {
   "hist-pt":   {get:f=>HIST[f.properties._i], tip:d=>histTip(d), click:d=>selectHist(d,true)},
   "park-pt":   {get:f=>PARKS[f.properties._i], tip:d=>parkTip(d), click:d=>selectPark(d,true)},
-  "seg-hit":   {get:f=>ROADS[f.properties._i], tip:d=>hwyTipKey(keyACF(d.properties)||"S"), click:d=>{const k=keyACF(d.properties); k?selectHighway(k,openCF,d):selectRoad(d,openCF);}},
+  "seg-hit":   {get:f=>ROADS[f.properties._i], tip:d=>hwyTipKey(segKey(d)||"S"), click:d=>{const k=segKey(d); k?selectHighway(k,openCF,d):selectRoad(d,openCF);}},
   "hwy-hit":   {get:f=>HWY[f.properties._i], tip:d=>hwyTipKey(keyTiger(d.properties)||"S"), click:d=>openCF?selectHighway(keyTiger(d.properties),openCF,null):selectTigerHwy(d)},
   "road-hit":  {get:f=>ROADS[f.properties._i], tip:d=>acfTip(d), click:d=>selectRoad(d,openCF)},
   "lakes":     {get:f=>NAT&&NAT.lakes[f.properties._i], tip:d=>`<b>${d.properties.n||"Unnamed lake"}</b><br><span class=k>${d.properties.t} · ${fmt(Math.round(d.properties.a*247.1))} acres</span>`, click:d=>selectWater(d,"lake",openCF), county:true},
@@ -417,12 +464,19 @@ function pick(point){
   const fs=map.queryRenderedFeatures([[point.x-3,point.y-3],[point.x+3,point.y+3]],{layers});
   if(openCF && fs.length){ // outside the open county counts as nothing
     const inside=d3.geoContains(countyBy[openCF],map.unproject(point).toArray()); if(!inside) return null; }
-  for(const id of Object.keys(PICK)){ const f=fs.find(x=>x.layer.id===id); if(f){ const d=PICK[id].get(f); if(d) return {id,f,d}; } }
+  for(const id of Object.keys(PICK)){ const f=fs.find(x=>x.layer.id===id); if(f){ const d=PICK[id].get(f); if(!d) continue;
+      // a state-road-file stretch is labelled with one route, often loosely ("Highway 62" for U.S. 62/412); go by the
+      // highway route drawn at the same spot when there is one
+      if(id==="seg-hit"){ const h=fs.find(x=>x.layer.id==="hwy-hit"); d._hk=h&&HWY[h.properties._i]?keyTiger(HWY[h.properties._i].properties):null; }
+      return {id,f,d}; } }
   return null;}
+const segKey=d=>d._hk||keyACF(d.properties);
 let hovered=null;
 function setHover(h){ if(h&&h.id==="counties-fill"&&openCF) h=null;
-  if(hovered&&(!h||hovered.source!==HOVER[h.id]||hovered.fid!==h.f.id)){ map.setFeatureState({source:hovered.source,id:hovered.fid},{hover:false}); hovered=null; }
-  if(h&&HOVER[h.id]&&h.f.id!=null&&!hovered){ hovered={source:HOVER[h.id],fid:h.f.id}; map.setFeatureState({source:hovered.source,id:hovered.fid},{hover:true}); } }
+  const key=h&&HOVER[h.id]&&h.f.id!=null?HOVER[h.id]+":"+(h.id==="hwy-hit"?"r"+h.f.properties._i:h.f.id):null;
+  if(hovered&&hovered.key!==key){ hovered.fids.forEach(id=>map.setFeatureState({source:hovered.source,id},{hover:false})); hovered=null; }
+  if(key&&!hovered){ hovered={key,source:HOVER[h.id],fids:h.id==="hwy-hit"?HWY_GROUPS[h.f.properties._i]:[h.f.id]};
+    hovered.fids.forEach(id=>map.setFeatureState({source:hovered.source,id},{hover:true})); } }
 function wireMap(){
   const canvas=map.getCanvas();
   map.on("mousemove",e=>{ if(map.isMoving()) return; const h=pick(e.point); setHover(h);
@@ -511,6 +565,7 @@ function wire(){det().querySelectorAll("li[data-id],tr[data-id]").forEach(li=>li
     const p=places.find(x=>x.properties.id===id); p?selectPlace(p,true):selectTwp(twpBy[id],true);});
   det().querySelectorAll("a[data-cf]").forEach(a=>a.onclick=e=>{e.preventDefault();selectCounty(countyBy[a.dataset.cf]);});
   det().querySelectorAll("a[data-pl]").forEach(a=>a.onclick=e=>{e.preventDefault();selectPlace(places.find(p=>p.properties.id===a.dataset.pl),true);});
+  det().querySelectorAll("a[data-hwy]").forEach(a=>a.onclick=e=>{e.preventDefault(); const h=HWY[+a.dataset.hwy]; openCF?selectHighway(keyTiger(h.properties),openCF,null):selectTigerHwy(h);});
   det().querySelectorAll("a[data-tw]").forEach(a=>a.onclick=e=>{e.preventDefault();selectTwp(twpBy[a.dataset.tw],true);});
   det().querySelectorAll("li[data-pk]").forEach(li=>li.onclick=()=>selectPark(PARKS.find(p=>p.id===li.dataset.pk)));
   det().querySelectorAll("li[data-hp]").forEach(li=>li.onclick=()=>selectHist(HIST.find(h=>h.id===li.dataset.hp)));}

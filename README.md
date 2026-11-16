@@ -24,7 +24,7 @@ Visit https://steelman1474.github.io/arkansas-map/. Opening `index.html` directl
 | `data/processed/state_parks.json` | Same, converted for the build |
 | `data/processed/park_outlines.txt` | Park boundaries from OpenStreetMap (compact; decoded by `build/decode_park_outlines.py`) |
 | `data/processed/nrhp_wikidata.tsv` | National Register of Historic Places listings with coordinates (from Wikidata) |
-| `data/web/highways.topo.json` | Interstates, U.S. and state highways (Census TIGER/Line 2024), loaded by the page |
+| `data/web/highways.topo.json` | Interstates, U.S. and state highways (OpenStreetMap routes; rebuild with `build/highways.mjs`), loaded by the page |
 | `data/web/roads/05xxx.json` | Every road in a county with who maintains it, surface, address range and ArDOT district (Arkansas Centerline File), loaded when a county is opened (rebuild with `build/acf_roads.py`) |
 | `data/web/nature.topo.json` | Rivers, lakes, national forests, parks, refuges and other public land (it also holds wildlife management areas, which the map no longer shows) (rebuild with `build/nature.py`) |
 | `data/processed/nature_links.json` | Wikipedia articles and official websites for rivers, lakes and public lands (matched by name, checked against the article's location) |
@@ -39,7 +39,7 @@ Requires Node.js (https://nodejs.org) and Python 3.
     npm run build
 
 ## Sources
-- Highways on the state map: U.S. Census Bureau TIGER/Line 2024
+- Highways: © OpenStreetMap contributors (ODbL), route relations fetched with the Overpass API (November 2026). A road two routes share is in both; Census TIGER road files were dropped because they keep old route names (e.g. Highway 4 on U.S. 278, renumbered in 1998) and miss many shared stretches
 - County road details: Arkansas Centerline File (ACF/ARNOLD), Arkansas GIS Office and ArDOT. Maintainer data is missing for a few counties (Conway, Garland, Greene, Izard, Pike, Pope); highways there are identified from names or Census lines
 - Background maps: OpenStreetMap (Map) and Esri World Imagery (Satellite), loaded live
 - U.S. Census Bureau TIGER/Line shapefiles (county subdivisions 2024, places 2019)
