@@ -607,7 +607,7 @@ document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>{mapEl.cla
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); }});
 document.getElementById("labels").onchange=e=>{labelsOn=e.target.checked; if(map.getLayer("clabels")) refreshVis(); updateAllBtn();};
 /* one button that turns every layer on, or every layer off */
-const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers input[type=checkbox]")];
+const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers input[type=checkbox]:not(:disabled)")];
 function updateAllBtn(){allBtn.textContent=allBoxes().every(cb=>cb.checked)?"Deselect all":"Select all";}
 allBtn.onclick=()=>{const on=!allBoxes().every(cb=>cb.checked);
   allBoxes().forEach(cb=>{cb.checked=on; if(cb.dataset.layer) mapEl.classList.toggle("hide-"+cb.dataset.layer,!on);});

@@ -194,6 +194,7 @@
   .layers>button::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-2px);transition:transform .15s}
   .layers.closed>button::after{transform:rotate(-45deg)}
   .layers.closed .lbody{display:none}
+  .layers label.locked{cursor:default} .layers label.locked input{opacity:.55}
   .allbtn{display:block;margin:0 0 4px auto;border:1px solid var(--line,#d5dde4);background:#f4f7f9;border-radius:7px;padding:3px 10px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer}
   .allbtn:hover{background:#e6edf2} .allbtn:focus-visible{outline:2px solid #2e6db4;outline-offset:1px}
   .lbody{padding:2px 6px 8px;border-top:1px solid var(--line)}
@@ -293,8 +294,8 @@
       <button type="button" aria-expanded="true">Layers</button>
       <div class="lbody">
         <button type="button" class="allbtn" id="allbtn">Deselect all</button>
-        <label><input type="checkbox" data-layer="City" checked><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
-        <label><input type="checkbox" data-layer="Town" checked><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
+        <label class="locked" title="Always shown"><input type="checkbox" data-layer="City" checked disabled><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
+        <label class="locked" title="Always shown"><input type="checkbox" data-layer="Town" checked disabled><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
         <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-designated places<span class="cnt" id="n-CDP"></span></label>
         <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:#3aa04a"></span>State parks<span class="cnt" id="n-Park"></span></label>
         <label><input type="checkbox" data-layer="Hist"><span class="sw" style="background:#7b3fa0;border-radius:50%"></span>Historic places<span class="cnt" id="n-Hist"></span></label>
@@ -313,8 +314,8 @@
         <p class="rdnote">Roads show on the Plain background only.</p>
         <hr>
         <label><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships<span class="cnt" id="n-Twp"></span></label>
-        <label><input type="checkbox" data-layer="County" checked><span class="sw" style="background:#fff;border:2px solid var(--county-line)"></span>County lines<span class="cnt" id="n-County"></span></label>
-        <label><input type="checkbox" id="labels" checked><span class="sw" style="border:none;font-size:11px;font-weight:700;line-height:14px;text-align:center;color:var(--county-line)">Aa</span>County names</label>
+        <label class="locked" title="Always shown"><input type="checkbox" data-layer="County" checked disabled><span class="sw" style="background:#fff;border:2px solid var(--county-line)"></span>County lines<span class="cnt" id="n-County"></span></label>
+        <label class="locked" title="Always shown"><input type="checkbox" id="labels" checked disabled><span class="sw" style="border:none;font-size:11px;font-weight:700;line-height:14px;text-align:center;color:var(--county-line)">Aa</span>County names</label>
       </div>
     </div>
     <div class="mapbtns"><button id="zin" title="Zoom in" aria-label="Zoom in">+</button><button id="zout" title="Zoom out" aria-label="Zoom out">−</button><button id="zreset" title="Reset zoom" aria-label="Reset zoom">⟲</button></div>
@@ -1025,7 +1026,7 @@ document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>{mapEl.cla
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); }});
 document.getElementById("labels").onchange=e=>{labelsOn=e.target.checked; if(map.getLayer("clabels")) refreshVis(); updateAllBtn();};
 /* one button that turns every layer on, or every layer off */
-const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers input[type=checkbox]")];
+const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers input[type=checkbox]:not(:disabled)")];
 function updateAllBtn(){allBtn.textContent=allBoxes().every(cb=>cb.checked)?"Deselect all":"Select all";}
 allBtn.onclick=()=>{const on=!allBoxes().every(cb=>cb.checked);
   allBoxes().forEach(cb=>{cb.checked=on; if(cb.dataset.layer) mapEl.classList.toggle("hide-"+cb.dataset.layer,!on);});
