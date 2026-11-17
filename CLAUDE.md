@@ -18,7 +18,8 @@ in about a minute).
 - `npm run build` = decode park outlines (Python) → `build/build-data.mjs` (writes `build/ar.topo.json`) → assemble.
   **Never edit `index.html` by hand; always rebuild and commit it.**
 - Files loaded at runtime (not inlined): `data/web/highways.topo.json`, `data/web/roads/05xxx.json` (one per county,
-  fetched when a county opens), `data/web/nature.topo.json`, `data/web/nature_links.json`, `data/fonts/` (self-hosted
+  fetched when a county opens), `data/web/nature.topo.json`, `data/web/nature_links.json`, `data/web/gov/*.json` (one file per government layer,
+  fetched the first time that layer is turned on), `data/fonts/` (self-hosted
   Noto Sans glyphs for map labels: Regular, Medium, Italic; ranges 0-255, 256-511, 8192-8447).
 - When a runtime data file changes, bump its `?v=` number in `app.js` so browsers don't use a cached copy.
 
@@ -31,6 +32,10 @@ in about a minute).
   `hl` source. Side-panel content comes from the `select*` functions.
 - Roads: the Arkansas Centerline File records that trace a highway are folded into the highway (`prepRoads`), and
   highways are keyed per route (`keyTiger` / `keyACF`) so a whole route selects at once.
+- Themes: the bar at the top (Places, Government, Nature, History) picks which layers the panel lists (`THEMES`,
+  `data-themes` on the panel rows). Cities, towns, county lines and roads show in every theme.
+- Government theme: each district layer is `GOVL` in `app.js`. Clicking a district shows it plus "Everything at this
+  spot" (`renderSpot`: every district, the city, sheriff and police at that point). County roads aren't clickable there.
 - Rivers with the same name are split into separate streams by connectivity (so different "Hurricane Creek"s stay apart).
 - Removed at the owner's request: wildlife management areas, flood zones, unnamed lakes. Don't bring them back unasked.
 
@@ -39,7 +44,7 @@ See README.md "Sources". Most of it came from Census TIGER/Line, Wikidata (SPARQ
 services (gis.arkansas.gov: Water, Boundaries, roads), ArDOT public lands, Nominatim/OpenStreetMap, Wikipedia's API.
 Highways come from OpenStreetMap route relations (Overpass API), not Census TIGER: TIGER keeps stale route names and
 misses shared stretches. Steps are at the top of `build/highways.mjs`; bump `highways.topo.json?v=` in `app.js` after.
-Rebuild scripts: `build/acf_roads.py` (county roads), `build/highways.mjs` (highways), `build/nature.py` (land and water;
+Rebuild scripts: `build/acf_roads.py` (county roads), `build/highways.mjs` (highways), `build/gov.mjs` (government layers), `build/nature.py` (land and water;
 needs the raw downloads, which aren't in the repo).
 
 ## Testing

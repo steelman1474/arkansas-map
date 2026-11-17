@@ -53,11 +53,11 @@ const mapEl = document.getElementById("map"), tip = d3.select("#tip");
 const BG = "#eef1f3";
 /* Themes: cities, towns, county lines and roads show on every theme; each theme adds its own layers (the panel rows tagged
    data-themes). THEMES lists which of a theme's layers start switched on. */
-const THEMES={places:["CDP","Park"],gov:["Twp"],nature:["Water","NF","NPW","Park"],history:["Hist"]};
+const THEMES={places:["CDP","Park"],gov:["School"],nature:["Water","NF","NPW","Park"],history:["Hist"]};
 let theme="places";
 function applyTheme(t){ theme=t;
-  document.querySelectorAll("#layers label[data-themes]").forEach(l=>{const k=l.querySelector("input").dataset.layer, inT=l.dataset.themes.split(" ").includes(t);
-    l.classList.toggle("off",!inT); mapEl.classList.toggle("hide-"+k,!(inT&&THEMES[t].includes(k)));});}
+  document.querySelectorAll("#layers [data-themes]").forEach(el=>{const inT=el.dataset.themes.split(" ").includes(t); el.classList.toggle("off",!inT);
+    const cb=el.tagName==="LABEL"&&el.querySelector("input"); if(cb) mapEl.classList.toggle("hide-"+cb.dataset.layer,!(inT&&THEMES[t].includes(cb.dataset.layer)));});}
 applyTheme(theme);
 const isOn = k => !mapEl.classList.contains("hide-"+k);
 
@@ -97,6 +97,8 @@ function refreshVis(){ for(const L of LAYERS){ if(!map.getLayer(L.id)) continue;
   map.setPaintProperty("twp-line","line-dasharray", openCF?[4,3]:[1,0]);
   map.setPaintProperty("twp-line","line-color", openCF?(basemap==="sat"?"#fff":"#3c6b98"):"#4f7fae");
   map.setPaintProperty("twp-line","line-width", openCF?0.9:0.4);
+  if(map.getLayer("g-Police")) ["g-Police","g-Police-lbl"].forEach(id=>map.setFilter(id,openCF?["==",["get","cf"],openCF]:null));
+  loadVisibleGov();
 }
 const inState = ()=>!openCF, inCounty = ()=>!!openCF, plain = ()=>basemap==="none";
 
@@ -195,6 +197,8 @@ map.on("load", () => {
   map.addSource("hist",{type:"geojson",data:FC(HIST.map((h,i)=>feat({type:"Point",coordinates:h.ll},{_i:i,n:h.n,cf:h.cf},i)))});
   add({id:"hist-pt",type:"circle",source:"hist",paint:{"circle-color":["case",["boolean",["feature-state","hover"],false],"#e3b6ff","#7b3fa0"],"circle-radius":zi(6,2,10,4,14,6),"circle-stroke-color":"#fff","circle-stroke-width":zi(6,0.5,10,1.2)}}, ()=>isOn("Hist"));
   map.addLayer({id:"hl-pt",type:"circle",source:"hl",filter:["==",["geometry-type"],"Point"],paint:{"circle-radius":zi(6,6,12,10),"circle-color":"rgba(0,0,0,0)","circle-stroke-color":"#b5202e","circle-stroke-width":3}});
+
+  addGovLayers();
 
   /* labels */
   map.addSource("clabels",{type:"geojson",data:FC(counties.map(c=>feat({type:"Point",coordinates:d3.geoCentroid(c)},{n:c.properties.n})))});
@@ -432,6 +436,172 @@ function selectWater(d,kind,cf){const P=d.properties;
   }
   wire();}
 
+/* ---------- government and politics ---------- */
+/* boundary layers from the Arkansas GIS Office (build/gov.mjs), one file each, fetched the first time a layer is turned on.
+   small: drawn thinner, labels only when zoomed in */
+const GOVL={
+  Pct:     {o:"precinct",c:"#3f6e1f",name:"Voting precinct",small:1},
+  JP:      {o:"jp",      c:"#b0361f",name:"Quorum court district",small:1},
+  Ward:    {o:"ward",    c:"#a8326e",name:"City ward",small:1},
+  School:  {o:"school",  c:"#b8560f",name:"School district"},
+  House:   {o:"house",   c:"#6d3aa8",name:"State House district"},
+  Senate:  {o:"senate",  c:"#a02a62",name:"State Senate district"},
+  Cong:    {o:"cong",    c:"#173f8a",name:"Congressional district"},
+  Circuit: {o:"circuit", c:"#4f4596",name:"Judicial circuit"},
+  DCourt:  {o:"dcourt",  c:"#7a5520",name:"District court"},
+  Fire:    {o:"fire",    c:"#cf2d1e",name:"Fire district",small:1},
+  WaterSys:{o:"water",   c:"#1f6fbf",name:"Water system",small:1},
+  Levee:   {o:"levee",   c:"#1f7a7a",name:"Levee district"}
+};
+const GOVD={}, govWait={}; let POLICE=null;
+const ordinal=n=>{n=+n; const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]);};
+const SIDE={N:"North",S:"South",E:"East",W:"West"};
+const PARTY={R:"Republican",D:"Democrat",I:"Independent"};
+const FIRET={MFD:"City fire department",RFD:"Rural fire department",FPD:"Fire protection district"};
+const circuitName=c=>{const m=String(c).match(/^(\d+)([NSEW]?)/); return ordinal(m[1])+(m[2]?" "+SIDE[m[2]]:"");};
+/* the source names are in all caps or loosely abbreviated: "Conway Vfd 1", "Mcgehee Waterworks", "Mt. Vernon/Enola*" */
+const tidyName=n=>n.replace(/\*+$/,"").replace(/\b(Vfd|Fd|Rv|Sw|Se|Ne|Nw|Ahtd|Pwa|Wss|Rwd|Ppwa|Ag&f|Usfs|Ii|Iii|Iv)\b/g,w=>w.toUpperCase()).replace(/\bMc([a-z])/g,(m,c)=>"Mc"+c.toUpperCase()).trim();
+function govName(K,d){const P=d.properties;
+  switch(K){
+    case "School": return /school|district/i.test(P.n)?P.n:P.n+" School District";
+    case "House": return "State House District "+P.d;
+    case "Senate": return "State Senate District "+P.d;
+    case "Cong": return ordinal(P.d)+" Congressional District";
+    case "Pct": return /precinct/i.test(P.n)?P.n:P.n+" precinct";
+    case "JP": return "JP District "+P.d;
+    case "Circuit": return circuitName(P.c)+" Judicial Circuit";
+    case "DCourt": return /^Division/.test(P.n)?((govCounties(d).map(c=>CN[c])[0]||"")+" County District Court, "+P.n):/District$/.test(P.n)?P.n+" Court":P.n+" District Court";
+    case "Fire": return /fire|vfd|department|district/i.test(P.n)?P.n:P.n+" Fire";
+    case "Ward": return P.c+" "+P.w;
+    default: return P.n;
+  }}
+const vacant=P=>P.p==="V"||/vacant/i.test(P.m);
+const member=P=>vacant(P)?"Vacant":`${P.m} (${P.p})`;
+const num=k=>["to-string",["get",k]];
+const GOVLBL={Pct:["get","n"],JP:["concat","JP ",num("d")],Ward:["get","w"],School:["get","n"],House:["concat","House ",num("d")],
+  Senate:["concat","Senate ",num("d")],Cong:["concat","District ",num("d")],Circuit:["get","lbl"],DCourt:["get","lbl"],
+  Fire:["get","n"],WaterSys:["get","n"],Levee:["get","n"]};
+function addGovLayers(){
+  for(const [K,G] of Object.entries(GOVL)){
+    map.addSource("g-"+K,{type:"geojson",data:EMPTY,tolerance:0.4}); map.addSource("g-"+K+"-pt",{type:"geojson",data:EMPTY});
+    const on=()=>isOn(K);
+    map.addLayer({id:"g-"+K+"-fill",type:"fill",source:"g-"+K,paint:{"fill-color":G.c,"fill-opacity":["case",["boolean",["feature-state","hover"],false],0.22,0]}},"cmesh");
+    map.addLayer({id:"g-"+K+"-line",type:"line",source:"g-"+K,layout:{"line-join":"round"},paint:{"line-color":G.c,"line-opacity":0.9,
+      "line-width":G.small?zi(6,0.5,10,1.1,14,2):zi(6,1.3,10,2.2,14,3)}},"cmesh");
+    map.addLayer({id:"g-"+K+"-lbl",type:"symbol",source:"g-"+K+"-pt",minzoom:G.small?(K==="Ward"?11:9):0,
+      layout:{"text-field":GOVLBL[K],"text-font":[M],"text-size":G.small?zi(9,10,13,12.5):zi(6,10,10,13),"text-max-width":8,"text-padding":2},
+      paint:{"text-color":G.c,"text-halo-color":"rgba(255,255,255,.92)","text-halo-width":1.5}},"cmesh");
+    ["-fill","-line","-lbl"].forEach(s=>LAYERS.push({id:"g-"+K+s,on}));
+  }
+  map.addSource("g-Police",{type:"geojson",data:EMPTY});
+  map.addLayer({id:"g-Police",type:"circle",source:"g-Police",paint:{"circle-color":["case",["boolean",["feature-state","hover"],false],"#ffd84a",
+      ["match",["get","t"],"sheriff","#8a6412","state","#4a5560","#1d3f8f"]],"circle-radius":zi(6,3,10,5,14,7),"circle-stroke-color":"#fff","circle-stroke-width":zi(6,0.8,10,1.5)}},"hl-pt");
+  map.addLayer({id:"g-Police-lbl",type:"symbol",source:"g-Police",minzoom:10,layout:{"text-field":["get","n"],"text-font":[M],"text-size":10.5,"text-anchor":"left","text-offset":[0.8,0],"text-max-width":11,"text-optional":true},
+    paint:{"text-color":"#1d3f8f","text-halo-color":"rgba(255,255,255,.92)","text-halo-width":1.4}},"hl-pt");
+  LAYERS.push({id:"g-Police",on:()=>isOn("Police")},{id:"g-Police-lbl",on:()=>isOn("Police")&&inCounty()});
+}
+/* fetch a layer's file once; resolves when it's on the map */
+function ensureGov(K){
+  if(GOVD[K]) return Promise.resolve(GOVD[K]);
+  return govWait[K]||(govWait[K]=fetch(`data/web/gov/${GOVL[K].o}.json?v=1`).then(r=>r.json()).then(tj=>{
+    const fs=topojson.feature(tj,tj.objects[GOVL[K].o]).features.filter(f=>f.geometry).map(reorient);
+    fs.forEach(f=>{const P=f.properties; if(P.n) P.n=tidyName(P.n); if(K==="Pct"&&/^\d/.test(P.n)) P.n="Precinct "+P.n; if(K==="Circuit") P.lbl=circuitName(P.c)+" Circuit"; if(K==="DCourt") P.lbl=P.n.replace(/ District$/,"");});
+    GOVD[K]=fs;
+    map.getSource("g-"+K).setData(FC(fs.map((f,i)=>feat(f.geometry,{_i:i},i))));
+    map.getSource("g-"+K+"-pt").setData(FC(fs.map((f,i)=>feat({type:"Point",coordinates:[f.properties.lx,f.properties.ly]},{...f.properties,_i:i}))));
+    return fs;}).catch(e=>{delete govWait[K]; console.error("government layer "+K+" failed:",e); return [];}));}
+function ensurePolice(){
+  if(POLICE) return Promise.resolve(POLICE);
+  return govWait.Police||(govWait.Police=fetch("data/web/gov/police.json?v=1").then(r=>r.json()).then(a=>{POLICE=a;
+    map.getSource("g-Police").setData(FC(a.map((p,i)=>feat({type:"Point",coordinates:p.ll},{t:p.t,n:p.n,cf:p.cf,_i:i},i)))); return a;})
+    .catch(e=>{delete govWait.Police; console.error("law enforcement layer failed:",e); return [];}));}
+function loadVisibleGov(){ if(!map.getSource("g-School")) return; for(const K in GOVL) if(isOn(K)) ensureGov(K); if(isOn("Police")) ensurePolice(); }
+const ensureAllGov=()=>Promise.all([...Object.keys(GOVL).map(ensureGov),ensurePolice()]);
+/* which features of a layer contain a point */
+function govAt(K,ll){ return (GOVD[K]||[]).filter(f=>{const [[x0,y0],[x1,y1]]=f._b||(f._b=d3.geoBounds(f)); return ll[0]>=x0&&ll[0]<=x1&&ll[1]>=y0&&ll[1]<=y1&&d3.geoContains(f,ll);}); }
+const govCounties=d=>d._cs||(d._cs=d.properties.cf?[d.properties.cf]:countiesTouched(d));
+const areaOf=f=>d3.geoArea(f)*6371008.8**2;
+function govTip(K,d){const P=d.properties; let s=`<b>${govName(K,d)}</b>`;
+  if(K==="House"||K==="Senate") s+=`<br>${vacant(P)?"Seat vacant":(K==="House"?"Rep. ":"Sen. ")+member(P)}`;
+  if(K==="JP") s+=`<br><span class=k>${CN[P.cf]} County quorum court${P.pop?` · ${fmt(P.pop)} people`:""}</span>`;
+  if(K==="Pct") s+=`<br><span class=k>Voting precinct · ${CN[P.cf]||""} County</span>`;
+  if(K==="Fire") s+=`<br><span class=k>${FIRET[P.t]||"Fire department"}${P.hh?` · ${fmt(P.hh)} households`:""}</span>`;
+  if(K==="WaterSys") s+=`<br><span class=k>Public water system</span>`;
+  if(K==="Levee"&&P.y) s+=`<br><span class=k>Formed ${P.y}</span>`;
+  if(K==="Ward") s+=`<br><span class=k>City council ward</span>`;
+  return s+`<br><span class=k>Click for everything at this spot</span>`;}
+const branch=p=>/district|sub|annex|jail|detention|division|branch|office of|center/i.test(p.n.replace(/Sheriffs? Office/i,""))?1:0; // a sheriff's main office first
+const policeKind={sheriff:"Sheriff's office",police:"Police department",state:"State Police"};
+function policeTip(p){return `<b>${p.n}</b><br><span class=k>${policeKind[p.t]} · ${p.c}</span>`;}
+const NOTE={
+  School:"Each school district is governed by its own elected school board, separate from city and county government. Voters in the district approve its property tax (millage).",
+  House:"The Arkansas House of Representatives has 100 members, each elected to a two-year term from a district of about 30,000 people. Member names are as listed by the Arkansas GIS Office.",
+  Senate:"The Arkansas Senate has 35 members, elected to four-year terms from districts of about 86,000 people. Member names are as listed by the Arkansas GIS Office.",
+  Cong:"Arkansas has four seats in the U.S. House of Representatives, each covering about 750,000 people. Both U.S. senators represent the whole state.",
+  Pct:"A precinct is the smallest unit of an election: everyone in it gets the same ballot and usually votes at the same polling place. County election commissions draw precinct lines.",
+  JP:"The quorum court is the county's legislature: it passes the budget and county ordinances. Each justice of the peace is elected from one district. Bigger counties have more districts (9 to 15).",
+  Ward:"Cities are divided into wards for electing city council members (aldermen). Many small towns elect their council at large instead, so they have no wards here.",
+  Circuit:"Circuit courts are Arkansas's main trial courts: felonies, larger lawsuits, divorce and family cases, probate and juvenile cases. A circuit covers one or more counties, and its judges are elected to six-year terms.",
+  DCourt:"District courts handle misdemeanors, traffic tickets, small claims, smaller civil lawsuits, and first appearances in felony cases.",
+  Fire:"City fire departments serve inside city limits. Rural fire departments, mostly volunteer, cover the countryside and are funded by dues or a county fire fee. Fire protection districts are created by the quorum court and can charge a yearly assessment.",
+  WaterSys:"Public water systems include city waterworks, rural water associations and regional water authorities. Places outside every system generally rely on private wells.",
+  Levee:"Levee districts build and maintain the flood levees along Arkansas's big rivers, paid for by a tax on the land they protect.",
+  Police:"The sheriff is the county's elected chief law officer and runs the county jail; deputies patrol outside city limits. Cities have police departments, and some small towns have a town marshal. Locations come from a 2008 national inventory, so a few may have moved or closed."};
+let spotLL=null;
+const spotTile=`<section class="tile span2" id="spot"><h4>Everything at this spot</h4><p class="fine">Loading…</p></section>`;
+/* a government district was clicked: its details, then every district covering the clicked spot */
+function selectGov(K,d,ll){ spotLL=ll||spotLL; highlight([d],"line");
+  const P=d.properties, cs=govCounties(d);
+  const links=(K==="House"||K==="Senate")&&P.u?`<div class="links">${ext(P.u,K==="House"?"Arkansas House page":"Arkansas Senate page")}</div>`
+    :K==="Cong"?`<div class="links">${ext(wpURL(`Arkansas's ${ordinal(P.d)} congressional district`),"Wikipedia")}</div>`
+    :K==="Levee"&&P.u?`<div class="links">${ext(P.u,"Founding document")}</div>`:"";
+  let st;
+  if(K==="House"||K==="Senate") st=stat(vacant(P)?"Vacant":P.m,K==="House"?"state representative":"state senator","accent")+stat(PARTY[P.p]||"—","party");
+  else if(K==="JP") st=stat(P.pop?fmt(P.pop):"—","people in 2020","accent")+stat(sqmi(areaOf(d)),"sq mi");
+  else if(K==="Fire") st=stat(P.hh?fmt(P.hh):"—","households (estimate)","accent")+stat(FIRET[P.t]||"—","type");
+  else if(K==="Levee") st=stat(P.y||"—","year formed","accent")+stat(sqmi(areaOf(d)),"sq mi");
+  else st=stat(sqmi(areaOf(d)),"sq mi","accent")+stat(cs.length,cs.length===1?"county":"counties");
+  det().innerHTML=hero(GOVL[K].name,"Gov",govName(K,d),links,(cs.length===1?"County: ":"Counties: ")+cs.map(c=>cLink(c)).join(", "))+st+
+    tile("span2 note",NOTE[K])+spotTile;
+  wire(); if(spotLL) renderSpot(spotLL);}
+function selectPolice(p){ highlight([{ll:p.ll}]); spotLL=p.ll;
+  det().innerHTML=hero(policeKind[p.t],"Gov",p.n,`<div class="links">${ext("https://www.google.com/search?q="+encodeURIComponent(p.n+" "+p.c+" Arkansas"),"Search the web")}</div>`,
+      `${p.a?p.a+", ":""}${p.c}${p.cf&&CN[p.cf]?" · "+cLink(p.cf)+" County":""}`)+
+    tile("span2 note",NOTE.Police)+spotTile;
+  wire(); renderSpot(p.ll);}
+function renderSpot(ll){
+  ensureAllGov().then(()=>{ const el=document.getElementById("spot"); if(!el||spotLL!==ll) return;
+    const one=(K,f2s)=>{const fs=govAt(K,ll); return fs.length?fs.map(f=>`<a href="#" data-gov="${K}:${GOVD[K].indexOf(f)}">${f2s?f2s(f):govName(K,f)}</a>`).join("<br>"):null;};
+    const C=counties.find(c=>d3.geoContains(c,ll)), cf=C&&C.properties.cf;
+    const pl=cf&&(placesByC[cf]||[]).find(p=>p.properties.t!=="CDP"&&d3.geoContains(p,ll));
+    const tw=cf&&(twpsByC[cf]||[]).find(t=>d3.geoContains(t,ll));
+    const sheriff=cf&&POLICE.filter(p=>p.t==="sheriff"&&p.cf===cf).sort((a,b)=>branch(a)-branch(b))[0];
+    const cops0=pl?POLICE.filter(p=>p.t==="police"&&p.c.toLowerCase()===pl.properties.n.toLowerCase()):[];
+    const cops=cops0.filter(p=>!/ - /.test(p.n)).length?cops0.filter(p=>!/ - /.test(p.n)):cops0; // the department, not each substation
+    const pd=x=>`<a href="#" data-pol="${POLICE.indexOf(x)}">${x.n}</a>`;
+    const R=[["U.S. House",one("Cong",f=>`${ordinal(f.properties.d)} District`)],
+      ["State Senate",one("Senate",f=>`District ${f.properties.d}: ${member(f.properties)}`)],
+      ["State House",one("House",f=>`District ${f.properties.d}: ${member(f.properties)}`)],
+      ["County",cf?cLink(cf)+" County":null],
+      ["Quorum court",one("JP",f=>`JP District ${f.properties.d}`)],
+      ["City or town",pl?`<a href="#" data-pl="${pl.properties.id}">${pl.properties.n}</a>`:(cf?"None (unincorporated; the county governs)":null)],
+      ["City ward",pl?(one("Ward",f=>f.properties.w)||"None mapped"):null],
+      ["Township",tw?`<a href="#" data-tw="${tw.properties.id}">${tw.properties.n}</a>`:null],
+      ["Voting precinct",one("Pct")],
+      ["School district",one("School")],
+      ["Fire protection",one("Fire")||"None mapped"],
+      ["Water",one("WaterSys")||"No public system mapped (likely private wells)"],
+      ["Levee district",one("Levee")],
+      ["Circuit court",one("Circuit")],
+      ["District court",one("DCourt")],
+      ["Sheriff",sheriff?pd(sheriff):null],
+      ["Police",cops.length?cops.map(pd).join("<br>"):null]];
+    el.innerHTML=`<h4>Everything at this spot</h4>`+R.filter(r=>r[1]).map(([k,v])=>row(k,v)).join("")+
+      `<p class="fine">Who governs and serves this exact spot. Click a name to see it on the map.</p>`;
+    el.querySelectorAll("a[data-gov]").forEach(a=>a.onclick=e=>{e.preventDefault(); const [K,i]=a.dataset.gov.split(":"); selectGov(K,GOVD[K][+i],ll);});
+    el.querySelectorAll("a[data-pol]").forEach(a=>a.onclick=e=>{e.preventDefault(); selectPolice(POLICE[+a.dataset.pol]);});
+    wire(); });}
+
 /* ---------- tooltips ---------- */
 function countyTip(d){const a=placesByC[d.properties.cf]; const se=seatsOf(d.properties.cf);
   return `<b>${d.properties.n} County</b><br><span class=k>Population</span> ${fmt(CI[d.properties.cf][0])}<br>Seat: ${se.map(p=>p.properties.n).join(" & ")}<br>${cnt(a,"City")} cities · ${cnt(a,"Town")} towns · ${cnt(a,"CDP")} CDPs<br><span class=k>Click to open the county map</span>`;}
@@ -451,12 +621,17 @@ function hideTip(){tip.style("opacity",0);}
 
 /* ---------- what's under the mouse ---------- */
 /* each clickable layer: how to find the original record, its tooltip, and what a click does */
+const GOV_ORDER=["Ward","Pct","JP","Fire","WaterSys","School","Levee","House","Senate","DCourt","Circuit","Cong"];
+let clickLL=null;
+const GOV_PICK=Object.fromEntries(GOV_ORDER.map(K=>["g-"+K+"-fill",{get:f=>GOVD[K]&&GOVD[K][f.properties._i], tip:d=>govTip(K,d), click:d=>selectGov(K,d,clickLL)}]));
 const PICK = {
+  "g-Police":  {get:f=>POLICE&&POLICE[f.properties._i], tip:d=>policeTip(d), click:d=>selectPolice(d)},
   "hist-pt":   {get:f=>HIST[f.properties._i], tip:d=>histTip(d), click:d=>selectHist(d,true)},
   "park-pt":   {get:f=>PARKS[f.properties._i], tip:d=>parkTip(d), click:d=>selectPark(d,true)},
   "seg-hit":   {get:f=>ROADS[f.properties._i], tip:d=>hwyTipKey(segKey(d)||"S"), click:d=>{const k=segKey(d); k?selectHighway(k,openCF,d):selectRoad(d,openCF);}},
   "hwy-hit":   {get:f=>HWY[f.properties._i], tip:d=>hwyTipKey(keyTiger(d.properties)||"S"), click:d=>openCF?selectHighway(keyTiger(d.properties),openCF,null):selectTigerHwy(d)},
   "road-hit":  {get:f=>ROADS[f.properties._i], tip:d=>acfTip(d), click:d=>selectRoad(d,openCF)},
+  ...GOV_PICK,
   "lakes":     {get:f=>NAT&&NAT.lakes[f.properties._i], tip:d=>`<b>${d.properties.n||"Unnamed lake"}</b><br><span class=k>${d.properties.t} · ${fmt(Math.round(d.properties.a*247.1))} acres</span>`, click:d=>selectWater(d,"lake",openCF), county:true},
   "river-hit": {get:f=>NAT&&NAT.rivers[f.properties._i], tip:d=>`<b>${d.properties.n||"Unnamed stream"}</b><br><span class=k>${waterKind(d.properties.n)} · click for details</span>`, click:d=>selectWater(d,"river",openCF)},
   "places-fill":{get:f=>places[f.properties._i], tip:d=>placeTip(d), click:d=>selectPlace(d,false)},
@@ -465,9 +640,10 @@ const PICK = {
   "land-fill": {get:f=>NAT&&NAT.areas[f.properties._i], tip:d=>`<b>${d.properties.n||LANDKIND[d.properties.t]}</b><br><span class=k>${LANDKIND[d.properties.t]} · click for details</span>`, click:d=>selectLand(d,openCF), county:true},
   "counties-fill":{get:f=>counties[f.properties._i], tip:d=>openCF?`<b>${d.properties.n} County</b><br><span class=k>Unincorporated area — governed by the county</span>`:countyTip(d), click:d=>openCF?selectCounty(countyBy[openCF]):selectCounty(d)}
 };
-const HOVER = {"hist-pt":"hist","places-fill":"places","park-area":"parks-a","twp-fill":"twps","lakes":"nat-lakes","land-fill":"nat-areas","counties-fill":"counties","hwy-hit":"hwy"};
+const HOVER = {...Object.fromEntries(GOV_ORDER.map(K=>["g-"+K+"-fill","g-"+K])),"g-Police":"g-Police","hist-pt":"hist","places-fill":"places","park-area":"parks-a","twp-fill":"twps","lakes":"nat-lakes","land-fill":"nat-areas","counties-fill":"counties","hwy-hit":"hwy"};
 function pick(point){
-  const layers=Object.keys(PICK).filter(id=>map.getLayer(id)&&map.getLayoutProperty(id,"visibility")!=="none"&&!(PICK[id].county&&!openCF));
+  // in the Government theme a click is about districts, so county roads (which cover a county map) are not clickable
+  const layers=Object.keys(PICK).filter(id=>map.getLayer(id)&&map.getLayoutProperty(id,"visibility")!=="none"&&!(PICK[id].county&&!openCF)&&!(theme==="gov"&&(id==="road-hit"||id==="seg-hit")));
   const fs=map.queryRenderedFeatures([[point.x-3,point.y-3],[point.x+3,point.y+3]],{layers});
   if(openCF && fs.length){ // outside the open county counts as nothing
     const inside=d3.geoContains(countyBy[openCF],map.unproject(point).toArray()); if(!inside) return null; }
@@ -490,7 +666,7 @@ function wireMap(){
     if(h){ canvas.style.cursor="pointer"; showTip(e.originalEvent,PICK[h.id].tip(h.d)); } else { canvas.style.cursor=""; hideTip(); } });
   map.on("mouseout",()=>{hideTip(); setHover(null);});
   map.on("movestart",()=>{hideTip();});
-  map.on("click",e=>{ hideTip(); const h=pick(e.point);
+  map.on("click",e=>{ hideTip(); clickLL=e.lngLat.toArray(); const h=pick(e.point);
     if(h) PICK[h.id].click(h.d); else if(openCF) selectCounty(countyBy[openCF]); else { highlight([]); resetDetail(); } });
 }
 
@@ -510,7 +686,7 @@ function setBasemap(v){basemap=v; mapEl.classList.remove("bm-osm","bm-sat"); if(
   document.getElementById("layers").classList.toggle("no-roads",v!=="none");
   if(!map.getLayer("counties-fill")) return;
   map.setPaintProperty("counties-fill","fill-opacity",v==="none"?1:v==="osm"?0.18:0.04);
-  map.setPaintProperty("places-fill","fill-opacity",v==="none"?1:v==="osm"?0.5:0.35);
+  placeFade();
   map.setPaintProperty("mask-ar","fill-color",BG);
   map.setPaintProperty("state-line","line-color",v==="sat"?"#fff":"#111");
   map.setPaintProperty("cmesh","line-color",v==="sat"?"rgba(255,255,255,.85)":"#1d3550");
@@ -521,6 +697,8 @@ function setBasemap(v){basemap=v; mapEl.classList.remove("bm-osm","bm-sat"); if(
   map.setPaintProperty("park-lbl","text-color",sat?"#d6ffd9":"#1d5c27"); map.setPaintProperty("hist-lbl","text-color",sat?"#f0d9ff":"#4a1f63");
   map.setPaintProperty("twp-lbl","text-color",sat?"#dbeaff":"#1f4a75");
   updateAttrib(); refreshVis();}
+/* cities and towns are drawn lighter in the Government theme so district lines on top of them stay readable */
+function placeFade(){ if(map.getLayer("places-fill")) map.setPaintProperty("places-fill","fill-opacity",(basemap==="none"?1:basemap==="osm"?0.5:0.35)*(theme==="gov"?0.45:1)); }
 function updateAttrib(){const a=[]; if(basemap!=="none") a.push(ATTR[basemap]); if(isOn("Terrain")) a.push("Terrain © Esri");
   document.getElementById("attrib").innerHTML=a.join(" · ");}
 document.querySelectorAll('input[name="bm"]').forEach(r=>r.onchange=()=>setBasemap(r.value));
@@ -673,7 +851,7 @@ updateAllBtn(); window.addEventListener("pageshow",updateAllBtn);
 const themeRadios=[...document.querySelectorAll("input[name=theme]")];
 const syncTheme=()=>themeRadios.forEach(r=>{r.autocomplete="off"; r.checked=r.value===theme;});
 syncTheme(); window.addEventListener("pageshow",syncTheme);
-themeRadios.forEach(r=>r.onchange=()=>{applyTheme(r.value); syncLayerBoxes();
+themeRadios.forEach(r=>r.onchange=()=>{applyTheme(r.value); syncLayerBoxes(); placeFade();
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); } updateAllBtn();});
 document.getElementById("zin").onclick=()=>map.zoomIn();
 document.getElementById("zout").onclick=()=>map.zoomOut();

@@ -27,6 +27,7 @@ Visit https://steelman1474.github.io/arkansas-map/. Opening `index.html` directl
 | `data/web/highways.topo.json` | Interstates, U.S. and state highways (OpenStreetMap routes; rebuild with `build/highways.mjs`), loaded by the page |
 | `data/web/roads/05xxx.json` | Every road in a county with who maintains it, surface, address range and ArDOT district (Arkansas Centerline File), loaded when a county is opened (rebuild with `build/acf_roads.py`) |
 | `data/web/nature.topo.json` | Rivers, lakes, national forests, parks, refuges and other public land (it also holds wildlife management areas, which the map no longer shows) (rebuild with `build/nature.py`) |
+| `data/web/gov/*.json` | Government and politics boundaries, one file per layer (school districts, State House and Senate, congressional, voting precincts, JP districts, city wards, circuit and district courts, fire, water and levee districts) plus `police.json` (sheriffs, police, State Police), each loaded the first time its layer is turned on (rebuild with `build/gov.mjs`) |
 | `data/processed/nature_links.json` | Wikipedia articles and official websites for rivers, lakes and public lands (matched by name, checked against the article's location) |
 | `data/processed/links.json` | Wikipedia titles and official websites (from Wikidata) |
 
@@ -53,3 +54,5 @@ Requires Node.js (https://nodejs.org) and Python 3.
 - Wildlife management areas: Arkansas Game and Fish Commission via the Arkansas GIS Office
 - Terrain shading: Esri World Hillshade, loaded live
 - Quorum court size: Arkansas Code § 14-14-402 population ranges
+- Government and politics layers: Arkansas GIS Office Boundaries service (school districts, State House and Senate districts with members as listed there, congressional districts, election precincts (2025), justice of the peace districts, municipal wards, circuit courts, state district courts (2025), fire districts, levee districts) and Utilities service (public water systems), fetched November 2026
+- Sheriffs, police departments and State Police posts: law enforcement locations (2008 national inventory) via the Arkansas GIS Office

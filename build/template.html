@@ -129,7 +129,7 @@
   text.pkl{font-size:11.5px;font-weight:700;fill:#1d5c27;text-anchor:middle;paint-order:stroke;stroke:rgba(255,255,255,.9);stroke-width:3px;pointer-events:none}
   #map.bm-sat text.pkl{fill:#d6ffd9;stroke:rgba(0,0,0,.75)}
   #map.hide-Park .park, #map.hide-Park .park-g{display:none}
-  .badge.Park{background:#2e8b3d}
+  .badge.Park{background:#2e8b3d} .badge.Gov{background:#4a3b78}
   #detail .pklist{list-style:none;padding:0;margin:4px 0 0;font-size:14px} #detail .pklist li{cursor:pointer;padding:1px 0} #detail .pklist li:hover{text-decoration:underline}
   #map.bm-osm .county{fill-opacity:.18} #map.bm-osm .c-base{fill-opacity:.12}
   #map.bm-osm .place{fill-opacity:.5}
@@ -209,7 +209,7 @@
   .themes label:hover span{color:var(--ink)}
   .themes input:checked+span{background:var(--ink);color:#fff}
   .themes input:focus-visible+span{outline:2px solid var(--flag);outline-offset:1px}
-  .lbody label.off{display:none}
+  .lbody .off{display:none}
   .lhead{margin:8px 6px 2px;padding-top:7px;border-top:1px solid var(--line);font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
   .bm{position:absolute;left:12px;bottom:12px;display:flex;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:3px;z-index:4}
   .bm label{position:relative;cursor:pointer}
@@ -306,6 +306,22 @@
         <label data-themes="places"><input type="checkbox" data-layer="CDP"><span class="sw" style="background:var(--cdp)"></span>Census-designated places<span class="cnt" id="n-CDP"></span></label>
         <label data-themes="places nature"><input type="checkbox" data-layer="Park"><span class="sw" style="background:#3aa04a"></span>State parks<span class="cnt" id="n-Park"></span></label>
         <label data-themes="places gov"><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships<span class="cnt" id="n-Twp"></span></label>
+        <p class="lhead" data-themes="gov">Elections</p>
+        <label data-themes="gov"><input type="checkbox" data-layer="Pct"><span class="sw" style="background:#fff;border:2px solid #3f6e1f"></span>Voting precincts</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="JP"><span class="sw" style="background:#fff;border:2px solid #b0361f"></span>Quorum court (JP) districts</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="Ward"><span class="sw" style="background:#fff;border:2px solid #a8326e"></span>City wards</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="House"><span class="sw" style="background:#fff;border:2px solid #6d3aa8"></span>State House districts</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="Senate"><span class="sw" style="background:#fff;border:2px solid #a02a62"></span>State Senate districts</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="Cong"><span class="sw" style="background:#fff;border:2px solid #173f8a"></span>Congressional districts</label>
+        <p class="lhead" data-themes="gov">Schools and services</p>
+        <label data-themes="gov"><input type="checkbox" data-layer="School"><span class="sw" style="background:#fff;border:2px solid #b8560f"></span>School districts</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="Fire"><span class="sw" style="background:#fff;border:2px solid #cf2d1e"></span>Fire districts</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="WaterSys"><span class="sw" style="background:#fff;border:2px solid #1f6fbf"></span>Water systems</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="Levee"><span class="sw" style="background:#fff;border:2px solid #1f7a7a"></span>Levee districts</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="Police"><span class="sw" style="background:#1d3f8f;border:2px solid #8a6412;border-radius:50%"></span>Sheriffs &amp; police</label>
+        <p class="lhead" data-themes="gov">Courts</p>
+        <label data-themes="gov"><input type="checkbox" data-layer="Circuit"><span class="sw" style="background:#fff;border:2px solid #4f4596"></span>Circuit courts</label>
+        <label data-themes="gov"><input type="checkbox" data-layer="DCourt"><span class="sw" style="background:#fff;border:2px solid #7a5520"></span>District courts</label>
         <label data-themes="nature"><input type="checkbox" data-layer="Water"><span class="sw" style="background:#2e6db4"></span>Rivers &amp; lakes</label>
         <label data-themes="nature"><input type="checkbox" data-layer="NF"><span class="sw" style="background:#6fae6a"></span>National forests</label>
         <label data-themes="nature"><input type="checkbox" data-layer="NPW"><span class="sw" style="background:#d08a3c"></span>National parks &amp; refuges</label>
@@ -358,7 +374,7 @@
       <p><b>County seats</b> are where the courthouse and county offices sit. Ten counties have two seats, mostly a holdover from when travel across the county was slow.</p>
       <p><b>Townships</b> are Arkansas's minor civil divisions. They have no government and today mostly serve as constable election districts. County courts can merge or redraw them, which is why Benton, Calhoun, Crawford and Sebastian counties now use numbered townships.</p>
     </details>
-    <div class="src">Boundaries from U.S. Census Bureau TIGER/Line (townships 2024, places 2019), simplified for the web. Populations (2020 Census), links, seats, formation years and namesakes from Wikidata. Historic places from National Register listings on Wikidata. Park outlines and highway routes from OpenStreetMap. Quorum court size is the number state law sets for the county's population range. Cities are assigned to the county containing their center, so the city/county population split is approximate.</div>
+    <div class="src">Boundaries from U.S. Census Bureau TIGER/Line (townships 2024, places 2019), simplified for the web. Populations (2020 Census), links, seats, formation years and namesakes from Wikidata. Historic places from National Register listings on Wikidata. Park outlines and highway routes from OpenStreetMap. Government districts, courts, fire and water districts and law enforcement locations from the Arkansas GIS Office. Quorum court size is the number state law sets for the county's population range. Cities are assigned to the county containing their center, so the city/county population split is approximate.</div>
   </aside>
 </div>
 <script>/*D3*/</script>
