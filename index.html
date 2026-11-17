@@ -202,6 +202,15 @@
   .sw{width:14px;height:14px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.25)}
   .lbody .cnt{margin-left:auto;color:var(--muted);font-size:12.5px}
   .lbody hr{border:none;border-top:1px solid var(--line);margin:5px 4px}
+  .themes{position:absolute;left:50%;top:12px;transform:translateX(-50%);display:flex;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:3px;z-index:4}
+  .themes label{position:relative;cursor:pointer}
+  .themes input{position:absolute;opacity:0;pointer-events:none}
+  .themes span{display:block;padding:6px 13px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+  .themes label:hover span{color:var(--ink)}
+  .themes input:checked+span{background:var(--ink);color:#fff}
+  .themes input:focus-visible+span{outline:2px solid var(--flag);outline-offset:1px}
+  .lbody label.off{display:none}
+  .lhead{margin:8px 6px 2px;padding-top:7px;border-top:1px solid var(--line);font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
   .bm{position:absolute;left:12px;bottom:12px;display:flex;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(16,30,42,.25);padding:3px;z-index:4}
   .bm label{position:relative;cursor:pointer}
   .bm input{position:absolute;opacity:0;pointer-events:none}
@@ -268,7 +277,9 @@
     .app{grid-template-columns:1fr;grid-template-rows:56px 56vh auto;position:static;min-height:100%}
     aside{overflow:visible}
     .search{width:auto;flex:1;max-width:none} .crumbs .hint{display:none}
-    .layers{width:210px}
+    .layers{width:210px;top:58px}
+    .themes{left:12px;right:60px;transform:none;overflow-x:auto;scrollbar-width:none}
+    .themes span{padding:6px 8px;font-size:13px}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -292,28 +303,32 @@
       <button type="button" aria-expanded="true">Layers</button>
       <div class="lbody">
         <button type="button" class="allbtn" id="allbtn">Deselect all</button>
+        <label data-themes="places"><input type="checkbox" data-layer="CDP"><span class="sw" style="background:var(--cdp)"></span>Census-designated places<span class="cnt" id="n-CDP"></span></label>
+        <label data-themes="places nature"><input type="checkbox" data-layer="Park"><span class="sw" style="background:#3aa04a"></span>State parks<span class="cnt" id="n-Park"></span></label>
+        <label data-themes="places gov"><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships<span class="cnt" id="n-Twp"></span></label>
+        <label data-themes="nature"><input type="checkbox" data-layer="Water"><span class="sw" style="background:#2e6db4"></span>Rivers &amp; lakes</label>
+        <label data-themes="nature"><input type="checkbox" data-layer="NF"><span class="sw" style="background:#6fae6a"></span>National forests</label>
+        <label data-themes="nature"><input type="checkbox" data-layer="NPW"><span class="sw" style="background:#d08a3c"></span>National parks &amp; refuges</label>
+        <label data-themes="nature"><input type="checkbox" data-layer="WN"><span class="sw" style="background:#4f8a5b"></span>Wilderness &amp; natural areas</label>
+        <label data-themes="nature"><input type="checkbox" data-layer="LP"><span class="sw" style="background:#8fd18a"></span>City &amp; county parks</label>
+        <label data-themes="nature"><input type="checkbox" data-layer="MIL"><span class="sw" style="background:#9a9a8a"></span>Military land</label>
+        <label data-themes="nature"><input type="checkbox" data-layer="Terrain"><span class="sw" style="background:linear-gradient(135deg,#fff,#7d8790)"></span>Terrain shading</label>
+        <label data-themes="history"><input type="checkbox" data-layer="Hist"><span class="sw" style="background:#7b3fa0;border-radius:50%"></span>Historic places<span class="cnt" id="n-Hist"></span></label>
+        <p class="lhead">On every map</p>
+        <label class="rd"><input type="checkbox" data-layer="Hwy" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 4px no-repeat,#f2c14e;border-color:#8a6d1f"></span>Highways</label>
+        <label class="rd"><input type="checkbox" data-layer="Road" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 2px no-repeat,var(--county)"></span>County &amp; local roads</label>
+        <p class="rdnote">Roads show on the Plain background only.</p>
         <label class="locked" title="Always shown"><input type="checkbox" data-layer="City" checked disabled><span class="sw" style="background:var(--city)"></span>Cities<span class="cnt" id="n-City"></span></label>
         <label class="locked" title="Always shown"><input type="checkbox" data-layer="Town" checked disabled><span class="sw" style="background:var(--town)"></span>Towns<span class="cnt" id="n-Town"></span></label>
-        <label><input type="checkbox" data-layer="CDP" checked><span class="sw" style="background:var(--cdp)"></span>Census-designated places<span class="cnt" id="n-CDP"></span></label>
-        <label><input type="checkbox" data-layer="Park" checked><span class="sw" style="background:#3aa04a"></span>State parks<span class="cnt" id="n-Park"></span></label>
-        <label><input type="checkbox" data-layer="Hist"><span class="sw" style="background:#7b3fa0;border-radius:50%"></span>Historic places<span class="cnt" id="n-Hist"></span></label>
-        <hr>
-        <label><input type="checkbox" data-layer="Water" checked><span class="sw" style="background:#2e6db4"></span>Rivers &amp; lakes</label>
-        <label><input type="checkbox" data-layer="NF" checked><span class="sw" style="background:#6fae6a"></span>National forests</label>
-        <label><input type="checkbox" data-layer="NPW" checked><span class="sw" style="background:#d08a3c"></span>National parks &amp; refuges</label>
-        <label><input type="checkbox" data-layer="WN"><span class="sw" style="background:#4f8a5b"></span>Wilderness &amp; natural areas</label>
-        <label><input type="checkbox" data-layer="LP"><span class="sw" style="background:#8fd18a"></span>City &amp; county parks</label>
-        <label><input type="checkbox" data-layer="MIL"><span class="sw" style="background:#9a9a8a"></span>Military land</label>
-        <label><input type="checkbox" data-layer="Terrain"><span class="sw" style="background:linear-gradient(135deg,#fff,#7d8790)"></span>Terrain shading</label>
-        <hr>
-        <label class="rd"><input type="checkbox" data-layer="Hwy" checked><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 4px no-repeat,#f2c14e;border-color:#8a6d1f"></span>Highways</label>
-        <label class="rd"><input type="checkbox" data-layer="Road"><span class="sw" style="background:linear-gradient(#fff,#fff) 50%/100% 2px no-repeat,var(--county)"></span>County &amp; local roads</label>
-        <p class="rdnote">Roads show on the Plain background only.</p>
-        <hr>
-        <label><input type="checkbox" data-layer="Twp"><span class="sw" style="background:var(--twp)"></span>Townships<span class="cnt" id="n-Twp"></span></label>
         <label class="locked" title="Always shown"><input type="checkbox" data-layer="County" checked disabled><span class="sw" style="background:#fff;border:2px solid var(--county-line)"></span>County lines<span class="cnt" id="n-County"></span></label>
         <label class="locked" title="Always shown"><input type="checkbox" id="labels" checked disabled><span class="sw" style="border:none;font-size:11px;font-weight:700;line-height:14px;text-align:center;color:var(--county-line)">Aa</span>County names</label>
       </div>
+    </div>
+    <div class="themes" role="radiogroup" aria-label="Map theme">
+      <label><input type="radio" name="theme" value="places" checked><span>Places</span></label>
+      <label><input type="radio" name="theme" value="gov"><span>Government</span></label>
+      <label><input type="radio" name="theme" value="nature"><span>Nature</span></label>
+      <label><input type="radio" name="theme" value="history"><span>History</span></label>
     </div>
     <div class="mapbtns"><button id="zin" title="Zoom in" aria-label="Zoom in">+</button><button id="zout" title="Zoom out" aria-label="Zoom out">−</button><button id="zreset" title="Reset zoom" aria-label="Reset zoom">⟲</button></div>
     <div class="bm" role="radiogroup" aria-label="Background">
@@ -1272,7 +1287,14 @@ const reorient = f => { if(d3.geoArea(f)>2*Math.PI){const g=f.geometry; if(g.typ
 
 const mapEl = document.getElementById("map"), tip = d3.select("#tip");
 const BG = "#eef1f3";
-mapEl.classList.add("hide-Twp","hide-Hist","hide-Road","hide-WN","hide-LP","hide-MIL","hide-Terrain");
+/* Themes: cities, towns, county lines and roads show on every theme; each theme adds its own layers (the panel rows tagged
+   data-themes). THEMES lists which of a theme's layers start switched on. */
+const THEMES={places:["CDP","Park"],gov:["Twp"],nature:["Water","NF","NPW","Park"],history:["Hist"]};
+let theme="places";
+function applyTheme(t){ theme=t;
+  document.querySelectorAll("#layers label[data-themes]").forEach(l=>{const k=l.querySelector("input").dataset.layer, inT=l.dataset.themes.split(" ").includes(t);
+    l.classList.toggle("off",!inT); mapEl.classList.toggle("hide-"+k,!(inT&&THEMES[t].includes(k)));});}
+applyTheme(theme);
 const isOn = k => !mapEl.classList.contains("hide-"+k);
 
 /* ---------- the map ---------- */
@@ -1876,7 +1898,7 @@ document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>{mapEl.cla
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); }});
 document.getElementById("labels").onchange=e=>{labelsOn=e.target.checked; if(map.getLayer("clabels")) refreshVis(); updateAllBtn();};
 /* one button that turns every layer on, or every layer off */
-const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers input[type=checkbox]:not(:disabled)")];
+const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers label:not(.off) input[type=checkbox]:not(:disabled)")];
 function updateAllBtn(){allBtn.textContent=allBoxes().every(cb=>cb.checked)?"Deselect all":"Select all";}
 allBtn.onclick=()=>{const on=!allBoxes().every(cb=>cb.checked);
   allBoxes().forEach(cb=>{cb.checked=on; if(cb.dataset.layer) mapEl.classList.toggle("hide-"+cb.dataset.layer,!on);});
@@ -1884,6 +1906,11 @@ allBtn.onclick=()=>{const on=!allBoxes().every(cb=>cb.checked);
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); } updateAllBtn();};
 document.querySelectorAll("#layers [data-layer]").forEach(cb=>cb.addEventListener("change",updateAllBtn));
 updateAllBtn(); window.addEventListener("pageshow",updateAllBtn);
+const themeRadios=[...document.querySelectorAll("input[name=theme]")];
+const syncTheme=()=>themeRadios.forEach(r=>{r.autocomplete="off"; r.checked=r.value===theme;});
+syncTheme(); window.addEventListener("pageshow",syncTheme);
+themeRadios.forEach(r=>r.onchange=()=>{applyTheme(r.value); syncLayerBoxes();
+  if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); } updateAllBtn();});
 document.getElementById("zin").onclick=()=>map.zoomIn();
 document.getElementById("zout").onclick=()=>map.zoomOut();
 document.getElementById("zreset").onclick=()=>openCF?fitCounty(openCF,{duration:600}):map.fitBounds(stateBox,flyOpts({duration:600}));

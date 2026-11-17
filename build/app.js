@@ -51,7 +51,14 @@ const reorient = f => { if(d3.geoArea(f)>2*Math.PI){const g=f.geometry; if(g.typ
 
 const mapEl = document.getElementById("map"), tip = d3.select("#tip");
 const BG = "#eef1f3";
-mapEl.classList.add("hide-Twp","hide-Hist","hide-Road","hide-WN","hide-LP","hide-MIL","hide-Terrain");
+/* Themes: cities, towns, county lines and roads show on every theme; each theme adds its own layers (the panel rows tagged
+   data-themes). THEMES lists which of a theme's layers start switched on. */
+const THEMES={places:["CDP","Park"],gov:["Twp"],nature:["Water","NF","NPW","Park"],history:["Hist"]};
+let theme="places";
+function applyTheme(t){ theme=t;
+  document.querySelectorAll("#layers label[data-themes]").forEach(l=>{const k=l.querySelector("input").dataset.layer, inT=l.dataset.themes.split(" ").includes(t);
+    l.classList.toggle("off",!inT); mapEl.classList.toggle("hide-"+k,!(inT&&THEMES[t].includes(k)));});}
+applyTheme(theme);
 const isOn = k => !mapEl.classList.contains("hide-"+k);
 
 /* ---------- the map ---------- */
@@ -655,7 +662,7 @@ document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>{mapEl.cla
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); }});
 document.getElementById("labels").onchange=e=>{labelsOn=e.target.checked; if(map.getLayer("clabels")) refreshVis(); updateAllBtn();};
 /* one button that turns every layer on, or every layer off */
-const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers input[type=checkbox]:not(:disabled)")];
+const allBtn=document.getElementById("allbtn"), allBoxes=()=>[...document.querySelectorAll("#layers label:not(.off) input[type=checkbox]:not(:disabled)")];
 function updateAllBtn(){allBtn.textContent=allBoxes().every(cb=>cb.checked)?"Deselect all":"Select all";}
 allBtn.onclick=()=>{const on=!allBoxes().every(cb=>cb.checked);
   allBoxes().forEach(cb=>{cb.checked=on; if(cb.dataset.layer) mapEl.classList.toggle("hide-"+cb.dataset.layer,!on);});
@@ -663,6 +670,11 @@ allBtn.onclick=()=>{const on=!allBoxes().every(cb=>cb.checked);
   if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); } updateAllBtn();};
 document.querySelectorAll("#layers [data-layer]").forEach(cb=>cb.addEventListener("change",updateAllBtn));
 updateAllBtn(); window.addEventListener("pageshow",updateAllBtn);
+const themeRadios=[...document.querySelectorAll("input[name=theme]")];
+const syncTheme=()=>themeRadios.forEach(r=>{r.autocomplete="off"; r.checked=r.value===theme;});
+syncTheme(); window.addEventListener("pageshow",syncTheme);
+themeRadios.forEach(r=>r.onchange=()=>{applyTheme(r.value); syncLayerBoxes();
+  if(map.getLayer("counties-fill")){ refreshVis(); updateAttrib(); } updateAllBtn();});
 document.getElementById("zin").onclick=()=>map.zoomIn();
 document.getElementById("zout").onclick=()=>map.zoomOut();
 document.getElementById("zreset").onclick=()=>openCF?fitCounty(openCF,{duration:600}):map.fitBounds(stateBox,flyOpts({duration:600}));
